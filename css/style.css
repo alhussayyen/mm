@@ -373,21 +373,111 @@ body{
 .capabilities{ padding:var(--section-pad) var(--gutter); background:var(--white); }
 .capabilities__intro{ max-width:var(--container); margin:0 auto clamp(40px,7vw,88px); }
 .capabilities__intro h2{ font-size:clamp(2.1rem,4.6vw,3.4rem); max-width:16ch; }
-.cap-list{ max-width:var(--container); margin:0 auto; border-top:1px solid var(--line); }
-.cap-row{
-  border-bottom:1px solid var(--line);
-  display:grid; gap:1.6rem; align-items:center;
-  padding:2.2rem 0;
+
+/* ---------- Capabilities gallery — editorial mosaic ----------
+   Approach: grid-column controls width only; every figure keeps its true
+   source aspect-ratio (no grid-row stretching), so images are never
+   distorted or aggressively cropped — width varies, composition stays intact. */
+.cap-gallery{
+  --cap-gap: clamp(14px, 2.2vw, 32px);
+  max-width:var(--container); margin:0 auto;
+  display:grid;
+  gap:var(--cap-gap);
+  grid-template-columns:1fr;
 }
-.cap-row__num{ font-family:var(--font-display); color:var(--gold); font-weight:700; font-size:.95rem; }
-.cap-row__text h3{ font-size:clamp(1.4rem,2.6vw,1.9rem); margin:.5rem 0 .6rem; }
-.cap-row__text p{ color:var(--muted); max-width:48ch; }
-.cap-row .ph--wide{ max-height:0; opacity:0; transition:max-height .6s var(--ease), opacity .5s var(--ease); }
-@media (min-width:860px){
-  .cap-row{ grid-template-columns:1.1fr .9fr; }
-  .cap-row .ph--wide{ max-height:340px; opacity:1; }
-  .cap-row:nth-child(even){ direction:ltr; }
-  .cap-row:nth-child(even) > *{ direction:rtl; }
+
+.cap-tile{ position:relative; }
+.cap-tile figure{
+  position:relative; overflow:hidden;
+  background:var(--charcoal); border-radius:2px; isolation:isolate;
+}
+.cap-tile img{
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; object-position:center;
+  transform:scale(1.001); /* avoids subpixel seam on some browsers */
+  transition:transform 1.2s var(--ease), filter 1s var(--ease);
+}
+.cap-tile:hover img, .cap-tile:focus-within img{ transform:scale(1.045); }
+@media (prefers-reduced-motion: reduce){ .cap-tile img{ transition:none; } .cap-tile:hover img{ transform:none; } }
+
+/* Persistent, understated folio number — always visible, never competes with the image */
+.cap-tile__num{
+  position:absolute; top:clamp(14px,2vw,22px); inset-inline-end:clamp(14px,2vw,22px); z-index:2;
+  font-family:var(--font-display); font-weight:600; font-size:.78rem; letter-spacing:.06em;
+  color:rgba(250,248,245,.85);
+  text-shadow:0 1px 10px rgba(0,0,0,.45);
+}
+
+/* Caption — on touch devices (no real hover) it stays visible as a compact
+   title strip, since a tap has no hover state to reveal it. On devices with
+   real pointer+hover, it starts hidden and reveals elegantly on hover/focus,
+   letting the image breathe as the section's main subject. */
+.cap-tile figcaption{
+  position:absolute; inset:auto 0 0 0; z-index:2;
+  padding:clamp(14px,3vw,22px) clamp(16px,3vw,22px);
+  background:linear-gradient(0deg, rgba(11,11,10,.82) 0%, transparent 100%);
+  color:var(--paper);
+}
+.cap-tile figcaption h3{
+  font-size:clamp(1.05rem,1.8vw,1.5rem); margin-bottom:.4rem;
+  position:relative; display:inline-block;
+}
+.cap-tile figcaption h3::after{
+  content:""; position:absolute; right:0; bottom:-.35em; width:34px; height:1px; background:var(--gold);
+}
+.cap-tile figcaption p{
+  color:var(--muted-light); font-size:.86rem; max-width:34ch;
+  display:none;
+}
+
+@media (hover:hover) and (pointer:fine){
+  .cap-tile figcaption{
+    padding:clamp(20px,3vw,34px) clamp(20px,3vw,30px);
+    background:linear-gradient(0deg, rgba(11,11,10,.88) 0%, rgba(11,11,10,.35) 55%, transparent 100%);
+    opacity:0; transform:translateY(14px);
+    transition:opacity .55s var(--ease), transform .55s var(--ease);
+  }
+  .cap-tile:hover figcaption, .cap-tile:focus-within figcaption{ opacity:1; transform:translateY(0); }
+  @media (prefers-reduced-motion: reduce){ .cap-tile figcaption{ transition:none; } }
+}
+
+/* ---- Mobile (default): single column, gentle alternating inset for an editorial (not grid-y) rhythm ---- */
+.cap-tile--portrait, .cap-tile--commercial{ max-width:86%; }
+.cap-tile--portrait{ margin-inline-start:auto; }
+.cap-tile--commercial{ margin-inline-end:auto; }
+.cap-tile--sports figure, .cap-tile--portrait figure, .cap-tile--commercial figure{ aspect-ratio:1/1; }
+.cap-tile--events figure, .cap-tile--realestate figure, .cap-tile--restaurants figure, .cap-tile--weddings figure{ aspect-ratio:3/2; }
+
+/* ---- Tablet: 8-column flow — spans sum to 8 per visual row, so items
+   wrap into the same grouping without any explicit grid-row math ---- */
+@media (min-width:700px){
+  .cap-gallery{ grid-template-columns:repeat(8, 1fr); align-items:start; }
+  .cap-tile{ max-width:none !important; margin:0 !important; }
+
+  .cap-tile--sports{ grid-column:span 5; }
+  .cap-tile--portrait{ grid-column:span 3; }
+  .cap-tile--commercial{ grid-column:span 3; }
+  .cap-tile--events{ grid-column:span 5; }
+  .cap-tile--realestate{ grid-column:span 4; }
+  .cap-tile--restaurants{ grid-column:span 4; }
+  .cap-tile--weddings{ grid-column:span 8; }
+}
+
+/* ---- Desktop: 12-column flow — a genuine editorial mosaic. Widths vary,
+   heights follow each photo's real aspect-ratio, rows wrap naturally. ---- */
+@media (min-width:1024px){
+  .cap-gallery{ grid-template-columns:repeat(12, 1fr); align-items:start; }
+
+  .cap-tile--sports{ grid-column:span 7; }      /* hero — largest tile */
+  .cap-tile--portrait{ grid-column:span 5; }     /* completes row 1 */
+  .cap-tile--commercial{ grid-column:span 4; }   /* small product tile */
+  .cap-tile--events{ grid-column:span 8; }       /* wide cinematic banner */
+  .cap-tile--realestate{ grid-column:span 6; }   /* calm even pair … */
+  .cap-tile--restaurants{ grid-column:span 6; }  /* …after the irregular rows */
+  .cap-tile--weddings{ grid-column:span 12; }    /* full-bleed closing frame */
+
+  .cap-tile figcaption p{ display:block; }
+  .cap-tile--events figcaption, .cap-tile--weddings figcaption{ max-width:640px; }
 }
 
 /* ---------- Selected Work ---------- */

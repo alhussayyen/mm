@@ -144,3 +144,90 @@
     updateParallax();
   }
 })();
+
+/**
+ * ---------- X (Twitter) official embeds — press section ----------
+ * Lazy-loaded: platform.twitter.com/widgets.js is only fetched the moment a
+ * card is about to enter the viewport, so it never affects initial page
+ * speed. Each card starts as a skeleton, becomes the real embed on success,
+ * or a branded fallback (X mark + link) if the embed can't load — for
+ * example when a blocker prevents X's script/iframes from loading.
+ */
+(() => {
+  'use strict';
+
+  const embeds = document.querySelectorAll('.press-card__embed');
+  if (!embeds.length) return;
+
+  let scriptPromise = null;
+  const loadTwitterScript = () => {
+    if (window.twttr && window.twttr.widgets) return Promise.resolve(window.twttr);
+    if (scriptPromise) return scriptPromise;
+    scriptPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://platform.twitter.com/widgets.js';
+      s.async = true;
+      s.onload = () => (window.twttr ? resolve(window.twttr) : reject(new Error('twttr unavailable')));
+      s.onerror = () => reject(new Error('script failed to load'));
+      document.body.appendChild(s);
+    });
+    return scriptPromise;
+  };
+
+  const withTimeout = (promise, ms) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+    ]);
+
+  const showFallback = (container) => {
+    const skeleton = container.querySelector('.press-card__skeleton');
+    const fallback = container.querySelector('.press-card__fallback');
+    if (skeleton) skeleton.remove();
+    if (fallback) fallback.style.display = 'flex';
+  };
+
+  const mountTweet = (container) => {
+    const id = container.dataset.tweetId;
+    if (!id) return;
+    withTimeout(loadTwitterScript(), 9000)
+      .then((twttr) =>
+        withTimeout(
+          twttr.widgets.createTweet(id, container, {
+            theme: 'light',
+            dnt: true,
+            conversation: 'none',
+            align: 'center',
+          }),
+          9000
+        )
+      )
+      .then((el) => {
+        const skeleton = container.querySelector('.press-card__skeleton');
+        if (el) {
+          if (skeleton) skeleton.remove();
+        } else {
+          showFallback(container);
+        }
+      })
+      .catch(() => showFallback(container));
+  };
+
+  if ('IntersectionObserver' in window) {
+    const embedIO = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            mountTweet(entry.target);
+            embedIO.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '200px 0px' }
+    );
+    embeds.forEach((el) => embedIO.observe(el));
+  } else {
+    // No IO support: load embeds directly (still async/non-blocking).
+    embeds.forEach(mountTweet);
+  }
+})();

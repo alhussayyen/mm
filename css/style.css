@@ -561,6 +561,22 @@ body{
   border-top:1px dashed var(--line); padding-top:.9rem;
 }
 
+/* Live X (Twitter) embed — loaded lazily via JS; skeleton shows until it
+   resolves, real embed replaces it, fallback shows only if it fails. */
+.press-card__embed{ min-height:200px; }
+.press-card__embed iframe{ max-width:100%; }
+.press-card__fallback{
+  display:none; flex-direction:column; align-items:center; justify-content:center;
+  gap:.8rem; min-height:200px; text-align:center;
+}
+.press-card__fallback svg{ width:28px; height:28px; fill:var(--ink); opacity:.8; }
+.press-card__fallback span{ font-size:.8rem; color:var(--muted); }
+.press-card__fallback a{
+  font-size:.82rem; font-weight:600; color:var(--gold-deep);
+  border-bottom:1px solid var(--gold); padding-bottom:2px; transition:color var(--dur-s);
+}
+.press-card__fallback a:hover{ color:var(--gold); }
+
 /* ---------- Philosophy ---------- */
 .philosophy{
   position:relative; padding:clamp(120px,20vw,260px) var(--gutter);

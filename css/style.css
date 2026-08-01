@@ -532,27 +532,73 @@ body{
 .press__intro{ max-width:760px; margin:0 auto clamp(40px,7vw,80px); text-align:center; }
 .press__intro h2{ font-size:clamp(2rem,4.4vw,3.1rem); margin:.6rem 0 1rem; }
 .press__intro p{ color:var(--muted); }
-.press__grid{
+/* ---- Carousel shell ---- */
+.press-carousel{
+  --pc-gap: clamp(16px, 2.4vw, 28px);
+  --pc-ease: cubic-bezier(.42,0,.58,1); /* explicit ease-in-out */
+  position:relative;
   max-width:var(--container); margin:0 auto;
-  display:grid; gap:clamp(20px,3vw,32px); grid-template-columns:1fr;
+  padding-inline:44px;
 }
-@media (min-width:700px){ .press__grid{ grid-template-columns:repeat(2,1fr); } }
-@media (min-width:1080px){ .press__grid{ grid-template-columns:repeat(3,1fr); } }
+@media (min-width:700px){ .press-carousel{ padding-inline:56px; } }
 
+/* Entrance: fade + translateY(20px), 0.7s — overrides the site's default
+   reveal-up (48px/1s) for this element only via extra specificity. */
+.press-carousel.reveal-up{
+  transform:translateY(20px);
+  transition:opacity .7s var(--ease), transform .7s var(--ease);
+}
+
+.press-carousel__viewport{ overflow:hidden; }
+.press-carousel__track{
+  display:flex; gap:var(--pc-gap); direction:ltr; touch-action:pan-y; cursor:grab;
+  will-change:transform;
+  transition:transform 500ms var(--pc-ease);
+}
+.press-carousel__track.is-dragging{ transition:none; cursor:grabbing; }
+.press-carousel.is-dragging .press-card__embed{ pointer-events:none; }
+.press-carousel__track:active{ cursor:grabbing; }
+
+.press-carousel__slide{
+  flex:0 0 auto;
+  width:100%;
+  user-select:none; -webkit-user-select:none;
+}
+@media (min-width:700px){ .press-carousel__slide{ width:calc((100% - var(--pc-gap)) / 2); } }
+@media (min-width:1024px){ .press-carousel__slide{ width:calc((100% - 3 * var(--pc-gap)) / 4); } }
+
+/* ---- Arrows — outside the cards, in the reserved side padding ---- */
+.press-carousel__arrow{
+  position:absolute; top:50%; transform:translateY(-50%); z-index:3;
+  display:flex; align-items:center; justify-content:center;
+  width:38px; height:38px; border-radius:50%;
+  background:var(--white); border:1px solid var(--line); color:var(--ink);
+  transition:background var(--dur-s) var(--ease), border-color var(--dur-s) var(--ease),
+    color var(--dur-s) var(--ease), transform var(--dur-s) var(--ease);
+}
+@media (min-width:700px){ .press-carousel__arrow{ width:44px; height:44px; } }
+.press-carousel__arrow svg{ width:18px; height:18px; }
+.press-carousel__arrow--prev{ inset-inline-end:0; }
+.press-carousel__arrow--next{ inset-inline-start:0; }
+.press-carousel__arrow:hover, .press-carousel__arrow:focus-visible{
+  background:var(--ink); border-color:var(--ink); color:var(--paper); transform:translateY(-50%) scale(1.06);
+}
+
+/* ---- Cards (unchanged visual language, just more compact) ---- */
 .press-card{
   background:var(--white); border:1px solid var(--line); border-radius:14px;
-  padding:1.6rem; transition:border-color var(--dur-s), box-shadow var(--dur-s), transform var(--dur-s);
+  padding:1.15rem; transition:border-color var(--dur-s), box-shadow var(--dur-s), transform var(--dur-s);
 }
 .press-card:hover{
   border-color:var(--gold); box-shadow:0 24px 48px -32px rgba(23,19,15,.28); transform:translateY(-4px);
 }
-.press-card__skeleton{ display:flex; gap:.9rem; align-items:flex-start; margin-bottom:1.1rem; }
+.press-card__skeleton{ display:flex; gap:.9rem; align-items:flex-start; margin-bottom:.9rem; }
 .press-card__avatar{
-  width:42px; height:42px; border-radius:50%; flex:none;
+  width:36px; height:36px; border-radius:50%; flex:none;
   background:linear-gradient(135deg, var(--line), #fff);
 }
-.press-card__lines{ flex:1; display:flex; flex-direction:column; gap:.55rem; padding-top:.3rem; }
-.press-card__lines span{ display:block; height:8px; border-radius:5px; background:var(--line); }
+.press-card__lines{ flex:1; display:flex; flex-direction:column; gap:.5rem; padding-top:.25rem; }
+.press-card__lines span{ display:block; height:7px; border-radius:5px; background:var(--line); }
 .press-card__lines span:nth-child(1){ width:55%; }
 .press-card__lines span:nth-child(2){ width:92%; }
 .press-card__lines span:nth-child(3){ width:78%; }
@@ -562,20 +608,29 @@ body{
 }
 
 /* Live X (Twitter) embed — loaded lazily via JS; skeleton shows until it
-   resolves, real embed replaces it, fallback shows only if it fails. */
-.press-card__embed{ min-height:200px; }
-.press-card__embed iframe{ max-width:100%; }
+   resolves, real embed replaces it, fallback shows only if it fails.
+   `zoom` (supported in Safari, Chrome, Edge) shrinks the embed's own type
+   and chrome by ~13% and reflows its box accordingly, so the card gets
+   both a smaller font and a shorter height — a real iframe's internal
+   styles can't be reached with plain CSS since it's cross-origin. */
+.press-card__embed{ min-height:150px; }
+.press-card__embed iframe{ max-width:100%; zoom:.87; }
 .press-card__fallback{
   display:none; flex-direction:column; align-items:center; justify-content:center;
-  gap:.8rem; min-height:200px; text-align:center;
+  gap:.7rem; min-height:150px; text-align:center;
 }
-.press-card__fallback svg{ width:28px; height:28px; fill:var(--ink); opacity:.8; }
-.press-card__fallback span{ font-size:.8rem; color:var(--muted); }
+.press-card__fallback svg{ width:26px; height:26px; fill:var(--ink); opacity:.8; }
+.press-card__fallback span{ font-size:.78rem; color:var(--muted); }
 .press-card__fallback a{
-  font-size:.82rem; font-weight:600; color:var(--gold-deep);
+  font-size:.8rem; font-weight:600; color:var(--gold-deep);
   border-bottom:1px solid var(--gold); padding-bottom:2px; transition:color var(--dur-s);
 }
 .press-card__fallback a:hover{ color:var(--gold); }
+
+@media (prefers-reduced-motion: reduce){
+  .press-carousel__track{ transition:none; }
+  .press-carousel__arrow{ transition:none; }
+}
 
 /* ---------- Philosophy ---------- */
 .philosophy{

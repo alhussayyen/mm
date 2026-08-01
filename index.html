@@ -322,8 +322,10 @@
       <p>حين تنشر جهة رسمية صورة تحمل توقيعي، فتلك أبلغ شهادة. هنا مساحة مخصّصة للتغريدات الرسمية — جاهزة لاستقبال الروابط الحقيقية فور توفّرها.</p>
     </div>
 
-    <ul class="press__grid">
-      <li class="press-card reveal-up" data-delay="1">
+    <div class="press-carousel reveal-up" id="pressCarousel">
+      <div class="press-carousel__viewport">
+        <ul class="press-carousel__track" id="pressTrack">
+      <li class="press-carousel__slide press-card">
         <div class="press-card__embed" data-tweet-id="1980918383085580792" data-tweet-url="https://x.com/badminton_ksa/status/1980918383085580792" aria-label="تغريدة رسمية من @badminton_ksa على X">
           <div class="press-card__skeleton" aria-hidden="true">
             <div class="press-card__avatar"></div>
@@ -336,7 +338,7 @@
           </div>
         </div>
       </li>
-      <li class="press-card reveal-up" data-delay="2">
+      <li class="press-carousel__slide press-card">
         <div class="press-card__embed" data-tweet-id="1939893154846490790" data-tweet-url="https://x.com/saudiff/status/1939893154846490790" aria-label="تغريدة رسمية من @saudiff على X">
           <div class="press-card__skeleton" aria-hidden="true">
             <div class="press-card__avatar"></div>
@@ -349,7 +351,7 @@
           </div>
         </div>
       </li>
-      <li class="press-card reveal-up" data-delay="3">
+      <li class="press-carousel__slide press-card">
         <div class="press-card__embed" data-tweet-id="1789373005895999553" data-tweet-url="https://x.com/spl/status/1789373005895999553" aria-label="تغريدة رسمية من @spl على X">
           <div class="press-card__skeleton" aria-hidden="true">
             <div class="press-card__avatar"></div>
@@ -362,7 +364,7 @@
           </div>
         </div>
       </li>
-      <li class="press-card reveal-up" data-delay="4">
+      <li class="press-carousel__slide press-card">
         <div class="press-card__embed" data-tweet-id="1975999663825166684" data-tweet-url="https://x.com/sttf_ksa/status/1975999663825166684" aria-label="تغريدة رسمية من @sttf_ksa على X">
           <div class="press-card__skeleton" aria-hidden="true">
             <div class="press-card__avatar"></div>
@@ -375,7 +377,7 @@
           </div>
         </div>
       </li>
-      <li class="press-card reveal-up" data-delay="5">
+      <li class="press-carousel__slide press-card">
         <div class="press-card__embed" data-tweet-id="1887235548940582931" data-tweet-url="https://x.com/schsorg/status/1887235548940582931" aria-label="تغريدة رسمية من @schsorg على X">
           <div class="press-card__skeleton" aria-hidden="true">
             <div class="press-card__avatar"></div>
@@ -388,7 +390,7 @@
           </div>
         </div>
       </li>
-      <li class="press-card reveal-up" data-delay="6">
+      <li class="press-carousel__slide press-card">
         <div class="press-card__embed" data-tweet-id="1702380431251783897" data-tweet-url="https://x.com/fdl_ksa/status/1702380431251783897" aria-label="تغريدة رسمية من @fdl_ksa على X">
           <div class="press-card__skeleton" aria-hidden="true">
             <div class="press-card__avatar"></div>
@@ -401,7 +403,7 @@
           </div>
         </div>
       </li>
-      <li class="press-card reveal-up" data-delay="7">
+      <li class="press-carousel__slide press-card">
         <div class="press-card__embed" data-tweet-id="1650576247095713806" data-tweet-url="https://x.com/kingcupsa/status/1650576247095713806" aria-label="تغريدة رسمية من @kingcupsa على X">
           <div class="press-card__skeleton" aria-hidden="true">
             <div class="press-card__avatar"></div>
@@ -414,7 +416,15 @@
           </div>
         </div>
       </li>
-    </ul>
+        </ul>
+      </div>
+      <button class="press-carousel__arrow press-carousel__arrow--prev" type="button" aria-label="التغريدة السابقة" data-carousel-prev>
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <button class="press-carousel__arrow press-carousel__arrow--next" type="button" aria-label="التغريدة التالية" data-carousel-next>
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+    </div>
   </section>
 
   <!-- ===================== 9. PHILOSOPHY ===================== -->

@@ -146,6 +146,186 @@
 })();
 
 /**
+ * ---------- Press section: infinite carousel ----------
+ * Dependency-free (no Embla/Swiper download) so it can't add load weight —
+ * the moving parts are the same as those libraries use internally: a flex
+ * track moved with `transform: translateX()`, a small clone buffer at each
+ * end for the illusion of an infinite loop, and Pointer Events for drag.
+ * Runs BEFORE the X-embed lazy-loader below so the cloned slides it creates
+ * are already in the DOM when that script scans for `.press-card__embed`.
+ */
+(() => {
+  'use strict';
+
+  const root = document.getElementById('pressCarousel');
+  const track = document.getElementById('pressTrack');
+  if (!root || !track) return;
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const prevBtn = root.querySelector('[data-carousel-prev]');
+  const nextBtn = root.querySelector('[data-carousel-next]');
+
+  const originalSlides = Array.from(track.children);
+  const total = originalSlides.length;
+
+  if (total > 1) {
+    const BUFFER = Math.min(4, total); // covers the largest visible count (desktop = 4)
+
+    const makeClone = (slide) => {
+      const clone = slide.cloneNode(true);
+      clone.setAttribute('aria-hidden', 'true');
+      clone.querySelectorAll('a, button, [tabindex]').forEach((el) => el.setAttribute('tabindex', '-1'));
+      return clone;
+    };
+
+    const leadingClones = originalSlides.slice(total - BUFFER).map(makeClone);
+    const trailingClones = originalSlides.slice(0, BUFFER).map(makeClone);
+
+    // Re-append everything in loop order: [leading clones][real slides][trailing clones].
+    // appendChild() on a node already in the DOM moves it, so this reorders in one pass.
+    const frag = document.createDocumentFragment();
+    leadingClones.forEach((el) => frag.appendChild(el));
+    originalSlides.forEach((el) => frag.appendChild(el));
+    trailingClones.forEach((el) => frag.appendChild(el));
+    track.appendChild(frag);
+
+    const slides = Array.from(track.children);
+    let currentIndex = BUFFER; // first real slide
+    let slideStep = 0;
+    let animating = false;
+
+    const measure = () => {
+      const sample = slides[BUFFER];
+      const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+      slideStep = sample.getBoundingClientRect().width + gap;
+    };
+
+    const place = (index, animate) => {
+      currentIndex = index;
+      const x = -currentIndex * slideStep;
+      if (!animate) {
+        track.style.transition = 'none';
+        track.style.transform = `translateX(${x}px)`;
+        void track.offsetHeight; // force reflow before restoring the transition
+        track.style.transition = '';
+      } else {
+        track.style.transform = `translateX(${x}px)`;
+      }
+    };
+
+    const normalizeAfterTransition = () => {
+      if (currentIndex >= BUFFER + total) {
+        place(currentIndex - total, false);
+      } else if (currentIndex < BUFFER) {
+        place(currentIndex + total, false);
+      }
+    };
+
+    track.addEventListener('transitionend', (e) => {
+      if (e.target !== track || e.propertyName !== 'transform') return;
+      animating = false;
+      normalizeAfterTransition();
+    });
+
+    const goNext = () => {
+      if (animating) return;
+      animating = !reduceMotion;
+      place(currentIndex + 1, !reduceMotion);
+      if (reduceMotion) normalizeAfterTransition();
+    };
+    const goPrev = () => {
+      if (animating) return;
+      animating = !reduceMotion;
+      place(currentIndex - 1, !reduceMotion);
+      if (reduceMotion) normalizeAfterTransition();
+    };
+
+    if (nextBtn) nextBtn.addEventListener('click', goNext);
+    if (prevBtn) prevBtn.addEventListener('click', goPrev);
+
+    // Initial position — synchronous, before the browser's first paint of
+    // this section, so the clone buffer is never visible even for a frame.
+    measure();
+    place(currentIndex, false);
+
+    let resizeTimer;
+    window.addEventListener(
+      'resize',
+      () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          measure();
+          place(currentIndex, false);
+        }, 120);
+      },
+      { passive: true }
+    );
+
+    /* ---- Drag (mouse + touch, via Pointer Events) ---- */
+    let dragging = false;
+    let dragMoved = false;
+    let dragStartX = 0;
+    let dragStartTranslate = 0;
+
+    track.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      dragging = true;
+      dragMoved = false;
+      dragStartX = e.clientX;
+      dragStartTranslate = -currentIndex * slideStep;
+      track.style.transition = 'none';
+      track.classList.add('is-dragging');
+      root.classList.add('is-dragging');
+      try {
+        track.setPointerCapture(e.pointerId);
+      } catch (err) {
+        /* noop — pointer capture is a progressive enhancement here */
+      }
+    });
+
+    track.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const delta = e.clientX - dragStartX;
+      if (Math.abs(delta) > 4) dragMoved = true;
+      track.style.transform = `translateX(${dragStartTranslate + delta}px)`;
+    });
+
+    const endDrag = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      track.classList.remove('is-dragging');
+      root.classList.remove('is-dragging');
+      track.style.transition = '';
+      const endX = typeof e.clientX === 'number' ? e.clientX : dragStartX;
+      const delta = endX - dragStartX;
+      const threshold = Math.max(40, slideStep * 0.15);
+      if (Math.abs(delta) > threshold) {
+        if (delta < 0) goNext();
+        else goPrev();
+      } else {
+        place(currentIndex, true);
+      }
+    };
+
+    track.addEventListener('pointerup', endDrag);
+    track.addEventListener('pointercancel', endDrag);
+
+    // Swallow the click that follows a real drag so links/embeds inside the
+    // dragged card don't get accidentally activated.
+    track.addEventListener(
+      'click',
+      (e) => {
+        if (dragMoved) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      },
+      true
+    );
+  }
+})();
+
+/**
  * ---------- X (Twitter) official embeds — press section ----------
  * Lazy-loaded: platform.twitter.com/widgets.js is only fetched the moment a
  * card is about to enter the viewport, so it never affects initial page

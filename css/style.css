@@ -455,6 +455,47 @@ body{
 .cap-tile[data-delay="5"]{ transition-delay:.4s; }
 .cap-tile[data-delay="6"]{ transition-delay:.48s; }
 
+/* ---------- Capabilities — mobile-only scroll-jack ----------
+   Scoped to (max-width:639px) AND html.has-cap-jack (added by main.js only
+   after it has moved #capGallery into the wrapper below). Tablet/desktop
+   (>=640px) never get this class or markup, so the grid above is completely
+   unaffected there. No drag handles, buttons or arrows exist — the section
+   pins on scroll and steps through services one at a time via wheel/touch
+   scroll intent only, sliding right-to-left going forward and reversing
+   left-to-right going back. */
+@media (max-width:639px){
+  html.has-cap-jack .cap-scroller{
+    position:relative;
+    height:160vh;
+    height:160dvh;
+  }
+  html.has-cap-jack .cap-scroller__stage{
+    position:sticky;
+    top:0;
+    height:100vh;
+    height:100dvh;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+  }
+  html.has-cap-jack .cap-scroller__stage .cap-gallery{
+    display:flex;
+    flex-wrap:nowrap;
+    direction:ltr; /* keep the slide math predictable regardless of the page's RTL base direction */
+    width:100%;
+    transition:transform 620ms cubic-bezier(.65,0,.35,1);
+    will-change:transform;
+  }
+  html.has-cap-jack .cap-scroller__stage .cap-tile{
+    flex:0 0 100%;
+    max-width:100%;
+    padding-inline:clamp(18px,5vw,28px);
+  }
+}
+@media (max-width:639px) and (prefers-reduced-motion: reduce){
+  html.has-cap-jack .cap-scroller__stage .cap-gallery{ transition:none; }
+}
+
 /* ---------- Selected Work ---------- */
 .work{ padding:var(--section-pad) var(--gutter); background:var(--paper); }
 .work__intro{ max-width:var(--container); margin:0 auto clamp(40px,7vw,88px); }

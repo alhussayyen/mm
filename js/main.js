@@ -411,3 +411,176 @@
     embeds.forEach(mountTweet);
   }
 })();
+
+/**
+ * ---------- Capabilities (Services) section: mobile-only scroll-jack ----------
+ * Below 640px ONLY. On desktop/tablet this script does nothing — the
+ * `.cap-gallery` grid is never touched, no wrapper elements are ever
+ * created, and nothing is added to the DOM.
+ *
+ * On mobile, once the gallery reaches the top of the viewport it pins
+ * (CSS `position:sticky`) and scroll input (wheel notch or one finger
+ * swipe) is intercepted to step exactly one service at a time — never
+ * more than one per scroll — sliding right-to-left going forward and
+ * left-to-right in reverse. There is no drag-to-scrub, no buttons, no
+ * arrows: scroll is the only control surface. Once the last service is
+ * reached, the section unpins and the page continues scrolling normally;
+ * scrolling back up re-pins and reverses the sequence symmetrically.
+ */
+(() => {
+  'use strict';
+
+  const section = document.getElementById('capabilities');
+  const gallery = document.getElementById('capGallery');
+  if (!section || !gallery) return;
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const mq = window.matchMedia('(max-width: 639px)');
+
+  const tiles = Array.from(gallery.children);
+  const total = tiles.length;
+  if (total < 2 || reduceMotion) return;
+
+  const TRANSITION_MS = 620;
+  const STEP_THRESHOLD_PX = 12;
+
+  let scroller = null;
+  let stage = null;
+  let active = false; // true once #capGallery has been moved into the pin wrapper
+  let index = 0;
+  let animating = false;
+  let wheelLocked = false;
+  let touchActive = false;
+  let touchLocked = false;
+  let touchStartY = 0;
+
+  const place = (animate) => {
+    if (!animate) gallery.style.transition = 'none';
+    gallery.style.transform = `translateX(${-index * 100}%)`;
+    if (!animate) {
+      void gallery.offsetHeight; // reflow, so the transition re-enables cleanly on the next step
+      gallery.style.transition = '';
+    }
+  };
+
+  const isStuck = () => !!stage && Math.abs(stage.getBoundingClientRect().top) < 1.5;
+
+  const goNext = () => {
+    if (animating || index >= total - 1) return;
+    animating = true;
+    index += 1;
+    place(true);
+  };
+
+  const goPrev = () => {
+    if (animating || index <= 0) return;
+    animating = true;
+    index -= 1;
+    place(true);
+  };
+
+  gallery.addEventListener('transitionend', (e) => {
+    if (e.target === gallery && e.propertyName === 'transform') animating = false;
+  });
+
+  const onWheel = (e) => {
+    if (!active || !isStuck()) return;
+    const goingDown = e.deltaY > 0;
+    if (goingDown && index >= total - 1) return; // last service reached — release, let the page scroll on
+    if (!goingDown && index <= 0) return; // first service — release, let the page scroll up
+    e.preventDefault();
+    if (wheelLocked || animating) return;
+    wheelLocked = true;
+    if (goingDown) goNext();
+    else goPrev();
+    setTimeout(() => { wheelLocked = false; }, TRANSITION_MS + 80);
+  };
+
+  const onTouchStart = (e) => {
+    touchStartY = e.touches[0].clientY;
+    touchActive = true;
+    touchLocked = false;
+  };
+
+  const onTouchMove = (e) => {
+    if (!active || !touchActive || !isStuck()) return;
+    const dy = touchStartY - e.touches[0].clientY; // >0: finger moved up = scroll-down intent
+    if (Math.abs(dy) < STEP_THRESHOLD_PX) return;
+    const goingDown = dy > 0;
+    if (goingDown && index >= total - 1) return;
+    if (!goingDown && index <= 0) return;
+    e.preventDefault();
+    if (touchLocked || animating) return;
+    touchLocked = true;
+    if (goingDown) goNext();
+    else goPrev();
+  };
+
+  const onTouchEnd = () => {
+    touchActive = false;
+    touchLocked = false;
+  };
+
+  const buildDom = () => {
+    if (active) return;
+    scroller = document.createElement('div');
+    scroller.className = 'cap-scroller';
+    stage = document.createElement('div');
+    stage.className = 'cap-scroller__stage';
+    gallery.parentNode.insertBefore(scroller, gallery);
+    stage.appendChild(gallery);
+    scroller.appendChild(stage);
+    // The horizontal slide is the reveal now — settle the fade-up state so
+    // it doesn't fight the transform on tiles that haven't fully intersected.
+    tiles.forEach((t) => t.classList.add('in-view'));
+    index = 0;
+    place(false);
+    document.documentElement.classList.add('has-cap-jack');
+    window.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    active = true;
+  };
+
+  const teardownDom = () => {
+    if (!active) return;
+    window.removeEventListener('wheel', onWheel);
+    window.removeEventListener('touchstart', onTouchStart);
+    window.removeEventListener('touchmove', onTouchMove);
+    window.removeEventListener('touchend', onTouchEnd);
+    document.documentElement.classList.remove('has-cap-jack');
+    gallery.style.transform = '';
+    gallery.style.transition = '';
+    section.insertBefore(gallery, scroller);
+    scroller.remove();
+    scroller = null;
+    stage = null;
+    animating = false;
+    wheelLocked = false;
+    touchLocked = false;
+    touchActive = false;
+    active = false;
+  };
+
+  const syncMode = () => {
+    if (mq.matches) buildDom();
+    else teardownDom();
+  };
+
+  syncMode();
+  if (typeof mq.addEventListener === 'function') mq.addEventListener('change', syncMode);
+  else if (typeof mq.addListener === 'function') mq.addListener(syncMode); // Safari <14 fallback
+
+  let resizeTimer;
+  window.addEventListener(
+    'resize',
+    () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (active) place(false);
+      }, 120);
+    },
+    { passive: true }
+  );
+})();

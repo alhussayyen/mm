@@ -418,13 +418,17 @@
  * `.cap-gallery` grid is never touched, no wrapper elements are ever
  * created, and nothing is added to the DOM.
  *
- * On mobile, once the gallery reaches the top of the viewport it pins
- * (CSS `position:sticky`) and scroll input (wheel notch or one finger
- * swipe) is intercepted to step exactly one service at a time — never
- * more than one per scroll — sliding right-to-left going forward and
- * left-to-right in reverse. There is no drag-to-scrub, no buttons, no
- * arrows: scroll is the only control surface. Once the last service is
- * reached, the section unpins and the page continues scrolling normally;
+ * On mobile, buildDom() moves both `.capabilities__intro` (the heading)
+ * and `#capGallery` into a `.cap-scroller > .cap-scroller__stage` wrapper.
+ * The instant that wrapper reaches the top of the viewport it pins (CSS
+ * `position:sticky`), with the heading and first card already on screen
+ * together — no separate scroll runway through the heading beforehand.
+ * Scroll input (wheel notch or one finger swipe) is then intercepted to
+ * step exactly one service at a time — never more than one per scroll —
+ * sliding right-to-left going forward and left-to-right in reverse. There
+ * is no drag-to-scrub, no buttons, no arrows: scroll is the only control
+ * surface. Once the last service is reached, the section unpins and the
+ * page continues scrolling normally straight into the next section;
  * scrolling back up re-pins and reverses the sequence symmetrically.
  */
 (() => {
@@ -432,6 +436,7 @@
 
   const section = document.getElementById('capabilities');
   const gallery = document.getElementById('capGallery');
+  const intro = section ? section.querySelector('.capabilities__intro') : null;
   if (!section || !gallery) return;
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -527,7 +532,14 @@
     scroller.className = 'cap-scroller';
     stage = document.createElement('div');
     stage.className = 'cap-scroller__stage';
-    gallery.parentNode.insertBefore(scroller, gallery);
+    // Pull .capabilities__intro into the pinned stage too, ahead of the
+    // gallery, so the sticky pin engages with the heading and first card
+    // already on screen together — no normal-scroll runway through the
+    // heading before pinning starts. Falls back to anchoring on the
+    // gallery alone if the intro markup isn't found for any reason.
+    const anchor = intro || gallery;
+    anchor.parentNode.insertBefore(scroller, anchor);
+    if (intro) stage.appendChild(intro);
     stage.appendChild(gallery);
     scroller.appendChild(stage);
     // The horizontal slide is the reveal now — settle the fade-up state so
@@ -552,6 +564,8 @@
     document.documentElement.classList.remove('has-cap-jack');
     gallery.style.transform = '';
     gallery.style.transition = '';
+    // Restore original order: intro, then gallery, both back in .capabilities.
+    if (intro) section.insertBefore(intro, scroller);
     section.insertBefore(gallery, scroller);
     scroller.remove();
     scroller = null;

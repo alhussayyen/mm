@@ -464,18 +464,21 @@ body{
    scroll intent only, sliding right-to-left going forward and reversing
    left-to-right going back. */
 @media (max-width:639px){
-  /* The pinned carousel itself is already tight (~100dvh, see .cap-scroller
-     below). What was still producing a long trailing gap after the last
-     service is .capabilities' own padding-bottom (inherited from
-     --section-pad, ~72px on mobile — see the shared rule at the top of this
-     file). In normal (non-jacked) flow that padding is fine: every section
-     has it, for breathing room before the next one. But once the gallery
-     is pinned, releasing the pin already lands the user right at the
-     section boundary — that inherited padding then just adds dead space
-     on top of .work's own padding-top. Zero it here (mobile + has-cap-jack
-     only) so the only gap after the last service is the next section's own
-     top padding, identical to every other section transition on the site. */
-  html.has-cap-jack .capabilities{ padding-bottom:0; }
+  /* .capabilities inherits vertical padding from --section-pad (~72px top
+     and bottom on mobile — see the shared rule at the top of this file).
+     That's correct in normal (non-jacked) flow, same as every other
+     section. But once JS has pinned the gallery (buildDom() in main.js now
+     moves .capabilities__intro into the stage alongside it — see
+     .cap-scroller__stage below), that padding no longer borders any real
+     in-flow content: it just sits before/after the sticky stage as dead
+     scroll distance the user has to cross before the stage can even
+     engage, and again after it releases. Zero it in both directions here
+     (mobile + has-cap-jack only) so the section's own height collapses to
+     exactly the stage's — sticky engages the instant the section reaches
+     the viewport top, with the heading and first card already on screen,
+     and releases straight into .work's own top padding, same as every
+     other section transition on the site. */
+  html.has-cap-jack .capabilities{ padding-top:0; padding-bottom:0; }
   html.has-cap-jack .cap-scroller{
     position:relative;
     /* This is the entire scroll runway for the pinned carousel — not a
@@ -498,7 +501,14 @@ body{
     height:100dvh;
     overflow:hidden;
     display:flex;
-    align-items:center;
+    /* Column, not row: .capabilities__intro (moved in here by buildDom())
+       stacks above the sliding .cap-gallery row, in the same visual order
+       as the unjacked layout — no design change, just relocated. Content
+       (heading + one card, ~550px combined) is shorter than 100dvh, so
+       justify-content:center keeps that stack vertically centered in the
+       pinned screen exactly as the carousel alone was before. */
+    flex-direction:column;
+    justify-content:center;
   }
   html.has-cap-jack .cap-scroller__stage .cap-gallery{
     display:flex;

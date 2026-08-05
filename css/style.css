@@ -464,6 +464,18 @@ body{
    scroll intent only, sliding right-to-left going forward and reversing
    left-to-right going back. */
 @media (max-width:639px){
+  /* The pinned carousel itself is already tight (~100dvh, see .cap-scroller
+     below). What was still producing a long trailing gap after the last
+     service is .capabilities' own padding-bottom (inherited from
+     --section-pad, ~72px on mobile — see the shared rule at the top of this
+     file). In normal (non-jacked) flow that padding is fine: every section
+     has it, for breathing room before the next one. But once the gallery
+     is pinned, releasing the pin already lands the user right at the
+     section boundary — that inherited padding then just adds dead space
+     on top of .work's own padding-top. Zero it here (mobile + has-cap-jack
+     only) so the only gap after the last service is the next section's own
+     top padding, identical to every other section transition on the site. */
+  html.has-cap-jack .capabilities{ padding-bottom:0; }
   html.has-cap-jack .cap-scroller{
     position:relative;
     /* This is the entire scroll runway for the pinned carousel — not a

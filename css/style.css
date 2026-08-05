@@ -466,8 +466,14 @@ body{
 @media (max-width:639px){
   html.has-cap-jack .cap-scroller{
     position:relative;
-    height:160vh;
-    height:160dvh;
+    /* Only a small fixed buffer above one screen — just enough headroom for
+       position:sticky to engage/release reliably. Tile-to-tile stepping
+       consumes no scroll distance (wheel/touch are preventDefault'd while
+       pinned), so this section never needs more than ~one viewport of
+       height; a large percentage-based buffer here was producing a long,
+       empty "dead scroll" before the next section appeared. */
+    height:calc(100vh + 64px);
+    height:calc(100dvh + 64px);
   }
   html.has-cap-jack .cap-scroller__stage{
     position:sticky;

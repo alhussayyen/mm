@@ -481,34 +481,30 @@ body{
   html.has-cap-jack .capabilities{ padding-top:0; padding-bottom:0; }
   html.has-cap-jack .cap-scroller{
     position:relative;
-    /* This is the entire scroll runway for the pinned carousel — not a
-       function of tile count (never nvh × total, never 300/400vh). Every
-       step between tiles is driven by index/transform in JS with the
-       native scroll preventDefault'd while pinned, so stepping through all
-       7 services consumes zero scroll distance on its own. The only reason
-       this container needs to be taller than the sticky stage at all is so
-       position:sticky has a non-zero range in which to engage and release;
-       24px is comfortably more than the sub-pixel slack that needs, while
-       staying short enough that the user drops into the next section
-       immediately after the last service, no dead gap. */
-    height:calc(100vh + 24px);
-    height:calc(100dvh + 24px);
+    /* Height is set inline by main.js (sizeScroller()) to the stage's own
+       *measured* content height (heading + one card) plus a small fixed
+       runway — never to 100dvh and never to a function of tile count. A
+       fixed 100dvh here was the actual bug: it forced .cap-scroller__stage
+       to centre ~550-650px of real content inside a fake full-screen box,
+       which is exactly what produced the large empty gap above the first
+       card and below the last one. Sizing this to the real content instead
+       means the pin starts flush with the first card and ends flush right
+       after the last one, with no dead scroll distance on either side. */
   }
   html.has-cap-jack .cap-scroller__stage{
     position:sticky;
     top:0;
-    height:100vh;
-    height:100dvh;
+    /* No fixed height and no vertical centering: the stage's height is
+       simply its own content (heading + sliding gallery row, in the same
+       visual order/spacing as the unjacked layout — no design change, just
+       relocated), so there's nothing left over to distribute above or
+       below it. That's what removes the dead space at both ends of the pin
+       — see the comment on .cap-scroller above for why a fixed height was
+       the root cause. overflow:hidden still clips the off-stage tiles
+       during the horizontal slide, same as before. */
     overflow:hidden;
     display:flex;
-    /* Column, not row: .capabilities__intro (moved in here by buildDom())
-       stacks above the sliding .cap-gallery row, in the same visual order
-       as the unjacked layout — no design change, just relocated. Content
-       (heading + one card, ~550px combined) is shorter than 100dvh, so
-       justify-content:center keeps that stack vertically centered in the
-       pinned screen exactly as the carousel alone was before. */
     flex-direction:column;
-    justify-content:center;
   }
   html.has-cap-jack .cap-scroller__stage .cap-gallery{
     display:flex;

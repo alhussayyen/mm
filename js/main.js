@@ -526,6 +526,26 @@
     touchLocked = false;
   };
 
+  // .cap-scroller (the sticky spacer) has no height in CSS on purpose — it's
+  // sized here, live, to the stage's *actual rendered content height*
+  // (heading + one card) plus PIN_RUNWAY_PX, instead of a fixed 100dvh.
+  // Sizing the spacer to a viewport-based fixed value was the real bug
+  // behind the large gap before the first card and after the last one:
+  // .cap-scroller__stage would then have ~100dvh to fill but only
+  // ~550-650px of real content, so it centred that content and left the
+  // rest as dead space. Measuring the real height means the pin starts
+  // flush with the first card and ends flush after the last one, with the
+  // next section following on immediately — no dead scroll distance either
+  // side. Must run AFTER 'has-cap-jack' is on <html>, since that's what
+  // switches .cap-gallery/.cap-tile into their sliding single-column
+  // layout in CSS — measuring before that would capture the wrong (grid)
+  // height.
+  const PIN_RUNWAY_PX = 24; // just enough non-zero range for position:sticky to engage/release in — not tied to viewport or tile count.
+  const sizeScroller = () => {
+    if (!scroller || !stage) return;
+    scroller.style.height = Math.ceil(stage.getBoundingClientRect().height) + PIN_RUNWAY_PX + 'px';
+  };
+
   const buildDom = () => {
     if (active) return;
     scroller = document.createElement('div');
@@ -548,6 +568,7 @@
     index = 0;
     place(false);
     document.documentElement.classList.add('has-cap-jack');
+    sizeScroller();
     window.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('touchstart', onTouchStart, { passive: true });
     window.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -592,7 +613,11 @@
     () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
-        if (active) place(false);
+        // Re-measure too: rotating the device or resizing changes the
+        // tile's rendered height (aspect-ratio card, clamp()'d type), so
+        // the spacer has to track that or the flush-start/flush-end fix
+        // above would drift out of sync again.
+        if (active) { place(false); sizeScroller(); }
       }, 120);
     },
     { passive: true }

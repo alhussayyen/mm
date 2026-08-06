@@ -224,7 +224,16 @@ body{
 }
 .primary-nav a:hover::after, .primary-nav a:focus-visible::after{ width:100%; }
 
-@media (min-width:900px){ .primary-nav{ display:flex; } }
+@media (min-width:900px){
+  .primary-nav{ display:flex; }
+  /* Desktop already shows the full nav, so the mobile hamburger has no
+     job to do here — hide it outright (not just visually) rather than
+     leaving a dead, focusable button sitting at the header's far edge.
+     Removing it from flow lets .site-header__row's existing
+     justify-content:space-between naturally redistribute the row
+     between just the logo and the nav, with no leftover gap. */
+  .menu-toggle{ display:none; }
+}
 
 .menu-toggle{ width:34px; height:22px; position:relative; z-index:70; }
 .menu-toggle span{
@@ -591,13 +600,24 @@ body{
 .clients{ padding:var(--section-pad) var(--gutter); background:var(--black); color:var(--paper); text-align:center; }
 .clients__intro{ max-width:var(--container); margin:0 auto clamp(40px,7vw,72px); }
 .clients__intro h2{ font-size:clamp(2rem,4.2vw,3rem); color:var(--paper); }
+/* Flexbox + wrap + justify-content:center instead of a plain CSS grid: with
+   13 logos, a fixed repeat(N,1fr) grid leaves an orphan last row (1, 1, or
+   3 logos, depending on breakpoint) flush against one side with empty
+   track space next to it — visibly unbalanced. Flex-wrap centers every
+   row as a group, including a short last one, while each <li> still gets
+   the exact same width the grid columns used to give it (same formula:
+   (100% - (n-1)*column-gap) / n), so nothing actually resizes. */
 .clients__grid{
   max-width:1100px; margin:0 auto;
-  display:grid; grid-template-columns:repeat(2,1fr); gap:2.2rem 1.5rem;
+  display:flex; flex-wrap:wrap; justify-content:center; align-items:center;
+  gap:2.2rem 1.5rem;
   font-family:var(--font-display); font-weight:500; font-size:clamp(1rem,2vw,1.3rem);
   color:var(--muted-light);
 }
-.clients__grid li{ display:flex; align-items:center; justify-content:center; }
+.clients__grid li{
+  display:flex; align-items:center; justify-content:center;
+  flex:0 0 calc((100% - 1.5rem) / 2); /* 2 per row by default — same width the old repeat(2,1fr) produced */
+}
 .clients__grid img{
   height:clamp(30px, 4vw, 50px); width:auto; max-width:100%;
   object-fit:contain; display:block;
@@ -606,8 +626,8 @@ body{
 .clients__grid img:hover{ transform:scale(1.03); }
 @media (prefers-reduced-motion: reduce){ .clients__grid img:hover{ transform:none; } }
 .clients__more{ margin-top:2.4rem; color:var(--muted-light); font-size:.9rem; }
-@media (min-width:640px){ .clients__grid{ grid-template-columns:repeat(3,1fr); } }
-@media (min-width:960px){ .clients__grid{ grid-template-columns:repeat(5,1fr); } }
+@media (min-width:640px){ .clients__grid li{ flex-basis:calc((100% - 2 * 1.5rem) / 3); } } /* 3 per row — same width repeat(3,1fr) produced */
+@media (min-width:960px){ .clients__grid li{ flex-basis:calc((100% - 4 * 1.5rem) / 5); } } /* 5 per row — same width repeat(5,1fr) produced */
 
 /* ---------- Recognition ---------- */
 .recognition{ padding:var(--section-pad) var(--gutter); background:var(--white); }

@@ -215,18 +215,6 @@ body{
 .brand__mark--dark{ display:none; }
 .brand__mark--light{ display:block; }
 
-/* Wraps the nav + the header-only social icons so .site-header__row's
-   justify-content:space-between still only ever balances two things (the
-   logo and this group) — exactly the same 2-item layout it already had,
-   just with the icons riding along inside the second item. Hidden by
-   default so mobile (where this whole group was already display:none via
-   .primary-nav below) is completely unaffected; only appears at the same
-   900px breakpoint the nav itself switches on at. */
-.site-header__right{ display:none; }
-@media (min-width:900px){
-  .site-header__right{ display:flex; align-items:center; gap:2.2rem; }
-}
-
 .primary-nav{ display:none; gap:2.6rem; }
 .primary-nav a{
   font-size:.92rem; font-weight:500; color:var(--paper);
@@ -239,13 +227,35 @@ body{
 .primary-nav a:hover::after, .primary-nav a:focus-visible::after{ width:100%; }
 
 @media (min-width:900px){
-  .primary-nav{ display:flex; }
+  /* Three real columns instead of flex's two-item space-between: a fixed
+     track on each outer edge and an auto-sized middle track for the nav.
+     The two outer tracks share the exact same minmax() definition, so
+     they're always identically sized (in lockstep, both floor and growth)
+     regardless of the logo and icon cluster having very different natural
+     widths — that's what actually centers the nav in the full row rather
+     than just in whatever space happens to be left over next to the logo.
+     Plain `1fr auto 1fr` looks equivalent but isn't quite: grid only
+     splits free space evenly between equal-fr tracks *before* checking
+     each track's own content-minimum, so the (wider) icon cluster would
+     win more of that space than the (narrower) logo the moment the row
+     gets narrow enough — a real, measurable off-center nav right at this
+     900px breakpoint. The 170px floor here is the icon cluster's own
+     content width (4 × 32px + 3 × .85rem gaps ≈ 169px, see
+     .social-row--header below) rounded up, so it can never be forced
+     smaller than what it actually needs. justify-self pins each outer
+     item to the true outer edge of its (now roomier) track — RTL: brand
+     starts at the right, the icons end at the left — instead of letting
+     them stretch across it. Height/padding are unchanged (still set on
+     this same element above), and this whole block only applies at the
+     same 900px breakpoint the nav already switched on at, so mobile
+     (still plain flex, brand + hamburger) is untouched. */
+  .site-header__row{ display:grid; grid-template-columns:minmax(170px,1fr) auto minmax(170px,1fr); column-gap:2rem; }
+  .brand{ justify-self:start; }
+  .primary-nav{ display:flex; justify-self:center; }
+  .social-row--header{ display:flex; justify-self:end; }
   /* Desktop already shows the full nav, so the mobile hamburger has no
      job to do here — hide it outright (not just visually) rather than
-     leaving a dead, focusable button sitting at the header's far edge.
-     Removing it from flow lets .site-header__row's existing
-     justify-content:space-between naturally redistribute the row
-     between just the logo and the nav, with no leftover gap. */
+     leaving a dead, focusable button sitting at the header's far edge. */
   .menu-toggle{ display:none; }
 }
 
@@ -311,8 +321,9 @@ body{
    colored to follow the header's own existing light/dark swap between
    its transparent-over-hero state and its scrolled state (see
    .site-header.is-scrolled above), instead of the contact section's
-   fixed light-background colors. */
-.social-row--header{ gap:.85rem; }
+   fixed light-background colors. Hidden by default (mobile) — the
+   900px media query above switches it to display:flex alongside the nav. */
+.social-row--header{ display:none; gap:.85rem; }
 .social-row--header a{
   display:inline-flex; align-items:center; justify-content:center;
   width:32px; height:32px; border-radius:50%;
@@ -762,7 +773,7 @@ li.recognition__group{ display:block; padding:1.5rem 0; border-bottom:1px solid 
    it keeps filling the card exactly with no cropping or blank strip.
    Desktop (≥700px) is untouched. */
 @media (max-width:699px){
-  .press-carousel{ --pc-gap: 22px; padding-inline:52px; }
+  .press-carousel{ --pc-gap: 26px; padding-inline:58px; }
 }
 
 /* Entrance: fade + translateY(20px), 0.7s — overrides the site's default
@@ -857,6 +868,20 @@ li.recognition__group{ display:block; padding:1.5rem 0; border-bottom:1px solid 
    fitEmbedToCard) — that keeps proportions intact instead of forcing X to
    clip or letterbox it. */
 .press-card__embed{ overflow:visible; }
+/* Mobile two-up only: X always mounts its iframe at its own 220px floor
+   first (see fitEmbedToCard in main.js), then that JS scales it down to
+   the card's real (much narrower) width on the very next animation
+   frame. Between those two moments the iframe briefly sits at its full
+   220px+ size — with overflow staying visible (the default above, needed
+   on wider layouts so a tall tweet's real height is never clipped) that
+   brief full-width flash bleeds sideways into the neighbouring tweet,
+   which is what read as the two cards overlapping. Clipping to the card's
+   own width for this layout only closes that window; it doesn't affect
+   height (still auto) so nothing real gets cropped once the JS settles
+   the scale a frame later. Desktop/tablet (≥700px) keeps overflow:visible. */
+@media (max-width:699px){
+  .press-card__embed{ overflow:hidden; }
+}
 .press-card__embed iframe{ max-width:100%; width:100%; display:block; }
 .press-card__fallback{
   display:none; flex-direction:column; align-items:center; justify-content:center;

@@ -412,36 +412,41 @@
 
 /**
  * ---------- Capabilities section: right-anchored peek carousel + lightbox ----------
+ * Rebuilt from scratch around a single source of truth per carousel: one
+ * "current index" integer. Every other piece of state — the track's
+ * transform, the arrows' enabled/disabled state, and the drag bounds — is
+ * *derived* from that index, nothing else is tracked separately. Arrows,
+ * drag (mouse, touch and trackpad all arrive as Pointer Events, so one
+ * code path covers all three) and the lightbox's own arrows/drag all call
+ * the exact same next()/prev()/goTo() functions on the exact same index.
+ * A completed drag can only ever move the index by exactly one step —
+ * never more, never a "closest position" guess — and the index is always
+ * clamped so the track can never scroll past its real content (no
+ * trailing empty space, no runaway scrolling past the last photo).
  * Same behaviour on every breakpoint (no separate mobile/desktop code
  * paths — CSS alone switches 1.5 visible "slots" on mobile to 3.5 on
- * desktop, see css/style.css) and on touch or mouse (Pointer Events unify
- * both): the current photo(s) sit flush at the right edge with the next
- * photo peeking in from the left, a real-time 1:1 drag that follows the
- * pointer, an elastic snap-back on a short drag, a smooth advance to the
- * next/prev photo once the drag passes a distance threshold, GPU-
- * accelerated transform:translate3d(), and a full-screen lightbox with
- * identical drag behaviour that hands the visitor back to the same photo
- * in the gallery on close. Section colours/type/card design are untouched
- * — only the browsing mechanics, nav position and caption layout are new.
- * No third-party carousel library is used.
+ * desktop, see css/style.css) and on touch, mouse or trackpad.
+ * Section colours/type/card design/image ratios/peek effect/nav position
+ * are untouched — only the browsing mechanics changed. No third-party
+ * carousel library is used.
  */
 (() => {
   'use strict';
 
-  const carousel = document.getElementById('capCarousel');
-  const viewport = document.getElementById('capViewport');
-  const track = document.getElementById('capTrack');
+  const carouselEl = document.getElementById('capCarousel');
+  const viewportEl = document.getElementById('capViewport');
+  const trackEl = document.getElementById('capTrack');
   const prevBtn = document.getElementById('capPrev');
   const nextBtn = document.getElementById('capNext');
   const lightbox = document.getElementById('capLightbox');
   const lightboxViewport = document.getElementById('capLightboxViewport');
   const lightboxTrack = document.getElementById('capLightboxTrack');
   const lightboxClose = document.getElementById('capLightboxClose');
-  if (!carousel || !viewport || !track || !lightbox || !lightboxTrack) return;
+  if (!carouselEl || !viewportEl || !trackEl || !lightbox || !lightboxTrack) return;
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const slides = Array.from(track.children);
+  const slides = Array.from(trackEl.children);
   const lightboxSlides = Array.from(lightboxTrack.children);
   const total = slides.length;
   if (!total) return;
@@ -453,93 +458,157 @@
     return img ? img.getAttribute('src') : '';
   });
 
-  let index = 0;
-  let slideStep = 0; // one slide's full width, including the gap
+  /* ============================================================
+     One tiny factory, two instances (the gallery track and the
+     lightbox track). Both are "index carousels": a track whose
+     resting transform is always `direction * index * step`, where
+     `direction` is +1 for a right-anchored, row-reversed track
+     (the main gallery — slide 0 sits flush at the right, see CSS)
+     or -1 for a plain left-to-right track (the lightbox). `step`
+     is one slide's real rendered width, measured from the DOM.
+     `maxIndex` is derived from how many slides actually fit in the
+     viewport at once, so the last resting position never leaves
+     empty space and never scrolls past the final photo.
+     ============================================================ */
+  function createIndexCarousel({ track, viewport, itemCount, direction }) {
+    let index = 0;
+    let step = 0;
+    let maxIndex = 0;
 
-  /* ---------- Small helper shared by the gallery drag and the lightbox drag ----------
-     The live preview always follows the pointer 1:1 in real screen space —
-     translate3d(x) moves content rightward for positive x no matter how the
-     track's own flex layout is ordered, so the photo must track the finger
-     directly (baseX + delta) with no sign flip, or the drag feels reversed.
+    const clampIndex = (i) => Math.max(0, Math.min(maxIndex, i));
 
-     What differs between the two tracks is which physical direction counts
-     as "forward" (next()) once a drag crosses the threshold: the main
-     gallery is edge-anchored to the right with slide 0 first in the DOM
-     (row-reverse layout, see CSS), so its index→transform mapping runs
-     +index*step (advancing moves the track right) — the mirror image of
-     the lightbox's plain LTR track, which runs -index*step (advancing moves
-     the track left). opts.reverseIndex accounts for that mirroring so the
-     photo that was already sliding under the finger keeps sliding the same
-     way once released, instead of reversing direction on release.
+    function measure() {
+      const first = track.children[0];
+      if (!first) return;
+      const rect = first.getBoundingClientRect();
+      if (!rect.width) return; // track is hidden (lightbox not open yet) — nothing to measure
+      const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+      step = rect.width + gap;
+      const visibleSlots = viewport.clientWidth / step;
+      // How many one-slide steps fit before the viewport would start
+      // showing past the last slide. Flooring against the *measured*
+      // visible slot count — not itemCount - 1 — is what stops the
+      // track flush with its real content instead of overshooting
+      // into empty space.
+      maxIndex = Math.max(0, Math.floor(itemCount - visibleSlots + 1e-6));
+      index = clampIndex(index);
+    }
 
-     opts.getMin/opts.getMax bound the live preview to the first/last slide's
-     resting position; past those bounds the drag is heavily dampened
-     (diminishing-returns rubber band, capped well under EDGE_MAX px) so
-     no empty track edge is ever exposed, then springs back on release. */
+    function positionX(i) {
+      return direction * i * step;
+    }
+
+    function render(animate) {
+      const x = positionX(index);
+      if (!animate) track.style.transition = 'none';
+      track.style.transform = `translate3d(${x}px,0,0)`;
+      if (!animate) {
+        void track.offsetHeight; // reflow so the transition re-enables cleanly next time
+        track.style.transition = '';
+      }
+    }
+
+    const changeListeners = [];
+    function goTo(i, animate) {
+      index = clampIndex(i);
+      render(animate !== false && !reduceMotion);
+      changeListeners.forEach((fn) => fn(index, maxIndex));
+    }
+
+    return {
+      measure,
+      render,
+      goTo,
+      next: () => goTo(index + 1),
+      prev: () => goTo(index - 1),
+      positionX,
+      direction,
+      getIndex: () => index,
+      getMaxIndex: () => maxIndex,
+      getStep: () => step,
+      onChange: (fn) => changeListeners.push(fn),
+    };
+  }
+
+  /* ---------- Shared drag handling ----------
+     Real-time 1:1 tracking while the pointer is down (the photo follows
+     the finger/cursor directly, in the track's own coordinate system —
+     translate3d(x) always moves the track toward +x for positive x,
+     whatever `direction` means for this particular track). On release,
+     a drag only ever resolves to exactly one of: go to the next index,
+     go to the previous index, or snap back to the current one — never a
+     jump of more than one slide, never a "closest slide" pixel guess. */
   const EDGE_MAX = 56;
   const EDGE_COEFF = 0.55;
   const rubberBand = (overshoot) => (overshoot * EDGE_MAX * EDGE_COEFF) / (EDGE_MAX + EDGE_COEFF * overshoot);
 
-  const attachDrag = (trackEl, opts) => {
+  function attachDrag(track, carousel) {
     let dragging = false;
     let dragMoved = false;
     let startX = 0;
     let baseX = 0;
 
-    trackEl.addEventListener('pointerdown', (e) => {
+    const bounds = () => {
+      const a = carousel.positionX(0);
+      const b = carousel.positionX(carousel.getMaxIndex());
+      return a <= b ? [a, b] : [b, a];
+    };
+
+    track.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       dragging = true;
       dragMoved = false;
       startX = e.clientX;
-      baseX = opts.getX();
-      trackEl.style.transition = 'none';
-      trackEl.classList.add('is-dragging');
-      try { trackEl.setPointerCapture(e.pointerId); } catch (err) { /* noop — progressive enhancement */ }
+      baseX = carousel.positionX(carousel.getIndex());
+      track.style.transition = 'none';
+      track.classList.add('is-dragging');
+      try { track.setPointerCapture(e.pointerId); } catch (err) { /* noop — progressive enhancement */ }
     });
 
-    trackEl.addEventListener('pointermove', (e) => {
+    track.addEventListener('pointermove', (e) => {
       if (!dragging) return;
       const delta = e.clientX - startX;
       if (Math.abs(delta) > 4) dragMoved = true;
-      // Real-time: the photo tracks the pointer directly (1:1, no lag, no
-      // inversion) while dragging.
       let target = baseX + delta;
-      const min = opts.getMin ? opts.getMin() : -Infinity;
-      const max = opts.getMax ? opts.getMax() : Infinity;
+      const [min, max] = bounds();
       if (target < min) target = min - rubberBand(min - target);
       else if (target > max) target = max + rubberBand(target - max);
-      trackEl.style.transform = `translate3d(${target}px,0,0)`;
+      track.style.transform = `translate3d(${target}px,0,0)`;
     });
 
     const endDrag = (e) => {
       if (!dragging) return;
       dragging = false;
-      trackEl.classList.remove('is-dragging');
-      trackEl.style.transition = '';
+      track.classList.remove('is-dragging');
+      track.style.transition = '';
       const endX = typeof e.clientX === 'number' ? e.clientX : startX;
       const delta = endX - startX;
-      const threshold = Math.max(48, opts.getStep() * 0.18);
+      const step = carousel.getStep();
+      const threshold = Math.max(48, step * 0.18);
       if (Math.abs(delta) > threshold) {
-        const draggedLeft = delta < 0;
-        const goForward = opts.reverseIndex ? !draggedLeft : draggedLeft;
-        if (goForward) opts.next();
-        else opts.prev();
+        // The track's transform moves toward +x for positive delta no
+        // matter which physical direction that is on screen, and
+        // carousel.direction is the same sign used to turn an index
+        // into that transform — so "delta and direction agree in sign"
+        // is exactly "this drag moved the track toward a higher index".
+        if (delta * carousel.direction > 0) carousel.next();
+        else carousel.prev();
       } else {
-        opts.settle(); // short drag, or a drag stopped at an edge — elastic snap back
+        carousel.render(!reduceMotion); // short drag (or stopped at an edge) — elastic snap back
       }
       // Keep dragMoved true through the synthetic click the browser fires
-      // right after this pointerup (that's what the capture-phase listener
-      // below needs to swallow), then release it so it can't linger and
-      // block an unrelated later click (e.g. a keyboard-activated one).
+      // right after this pointerup (swallowed by the capture-phase
+      // listener below), then release it so it can't linger and block a
+      // later, unrelated click (e.g. a keyboard-activated one).
       setTimeout(() => { dragMoved = false; }, 0);
     };
-    trackEl.addEventListener('pointerup', endDrag);
-    trackEl.addEventListener('pointercancel', endDrag);
+    track.addEventListener('pointerup', endDrag);
+    track.addEventListener('pointercancel', endDrag);
 
     // Swallow the click a real drag would otherwise fire on the frame
     // button underneath it, so swiping never accidentally opens the
-    // lightbox — same technique the press carousel uses above.
-    trackEl.addEventListener(
+    // lightbox.
+    track.addEventListener(
       'click',
       (e) => {
         if (dragMoved) {
@@ -549,25 +618,19 @@
       },
       true
     );
-  };
+  }
 
   /* ================= Main carousel ================= */
-  const measure = () => {
-    const rect = slides[0].getBoundingClientRect();
-    const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
-    slideStep = rect.width + gap;
-  };
-
-  // Slide 0 rests flush against the right edge with transform 0 (see the
-  // row-reverse layout in CSS); each further slide needs the track pushed
-  // that much further right to stay flush — see the attachDrag comment
-  // above for why this is a *positive*, increasing offset in a right-
-  // anchored RTL layout, unlike a typical left-anchored LTR carousel.
-  const currentX = () => index * slideStep;
+  const gallery = createIndexCarousel({
+    track: trackEl,
+    viewport: viewportEl,
+    itemCount: total,
+    direction: 1, // slide 0 rests flush at the right (row-reverse track, see CSS); advancing pushes the track further right
+  });
 
   const updateArrows = () => {
-    if (prevBtn) prevBtn.disabled = index <= 0;
-    if (nextBtn) nextBtn.disabled = index >= total - 1;
+    if (prevBtn) prevBtn.disabled = gallery.getIndex() <= 0;
+    if (nextBtn) nextBtn.disabled = gallery.getIndex() >= gallery.getMaxIndex();
   };
 
   const preloadAround = (i) => {
@@ -578,45 +641,15 @@
     });
   };
 
-  const place = (animate) => {
-    const x = currentX();
-    if (!animate) track.style.transition = 'none';
-    track.style.transform = `translate3d(${x}px,0,0)`;
-    if (!animate) {
-      void track.offsetHeight; // reflow so the transition re-enables cleanly next time
-      track.style.transition = '';
-    }
+  gallery.onChange((i) => {
     updateArrows();
-  };
-
-  let animating = false;
-  track.addEventListener('transitionend', (e) => {
-    if (e.target === track && e.propertyName === 'transform') animating = false;
+    preloadAround(i);
   });
 
-  const goTo = (i, animate) => {
-    index = Math.max(0, Math.min(total - 1, i));
-    const willAnimate = animate !== false && !reduceMotion;
-    animating = willAnimate;
-    place(willAnimate);
-    preloadAround(index);
-  };
-  const goNext = () => { if (!animating) goTo(index + 1); };
-  const goPrev = () => { if (!animating) goTo(index - 1); };
+  if (nextBtn) nextBtn.addEventListener('click', () => gallery.next());
+  if (prevBtn) prevBtn.addEventListener('click', () => gallery.prev());
 
-  if (nextBtn) nextBtn.addEventListener('click', goNext);
-  if (prevBtn) prevBtn.addEventListener('click', goPrev);
-
-  attachDrag(track, {
-    getX: currentX,
-    getStep: () => slideStep,
-    getMin: () => 0,
-    getMax: () => (total - 1) * slideStep,
-    next: goNext,
-    prev: goPrev,
-    settle: () => place(!reduceMotion),
-    reverseIndex: true,
-  });
+  attachDrag(trackEl, gallery);
 
   // Tapping (not dragging) a frame opens the lightbox at that photo.
   slides.forEach((slide, i) => {
@@ -624,8 +657,9 @@
     if (btn) btn.addEventListener('click', () => openLightbox(i));
   });
 
-  measure();
-  place(false);
+  gallery.measure();
+  gallery.render(false);
+  updateArrows();
   preloadAround(0);
 
   let resizeTimer;
@@ -633,29 +667,24 @@
     'resize',
     () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => { measure(); place(false); }, 120);
+      resizeTimer = setTimeout(() => {
+        gallery.measure();
+        gallery.render(false);
+        updateArrows();
+      }, 120);
     },
     { passive: true }
   );
 
   /* ================= Lightbox (full-screen viewer, same drag model) ================= */
-  let lbIndex = 0;
-  let lbStep = 0;
+  const lightboxCarousel = createIndexCarousel({
+    track: lightboxTrack,
+    viewport: lightboxViewport,
+    itemCount: total,
+    direction: -1, // plain left-to-right track — advancing moves it left
+  });
   let lbOpen = false;
   let lastFocused = null;
-
-  const lbMeasure = () => { lbStep = lightboxViewport.clientWidth; };
-  const lbCurrentX = () => -lbIndex * lbStep;
-
-  const lbPlace = (animate) => {
-    const x = lbCurrentX();
-    if (!animate) lightboxTrack.style.transition = 'none';
-    lightboxTrack.style.transform = `translate3d(${x}px,0,0)`;
-    if (!animate) {
-      void lightboxTrack.offsetHeight;
-      lightboxTrack.style.transition = '';
-    }
-  };
 
   const lbPreload = (i) => {
     [i - 1, i, i + 1].forEach((n) => {
@@ -665,31 +694,17 @@
     });
   };
 
-  const lbGoTo = (i, animate) => {
-    lbIndex = Math.max(0, Math.min(total - 1, i));
-    lbPlace(animate !== false && !reduceMotion);
-    lbPreload(lbIndex);
-  };
+  lightboxCarousel.onChange((i) => lbPreload(i));
 
-  attachDrag(lightboxTrack, {
-    getX: lbCurrentX,
-    getStep: () => lbStep,
-    getMin: () => -(total - 1) * lbStep,
-    getMax: () => 0,
-    next: () => lbGoTo(lbIndex + 1),
-    prev: () => lbGoTo(lbIndex - 1),
-    settle: () => lbPlace(!reduceMotion),
-  });
+  attachDrag(lightboxTrack, lightboxCarousel);
 
   function openLightbox(i) {
-    lbIndex = i;
     lastFocused = document.activeElement;
     lightbox.hidden = false;
     document.body.style.overflow = 'hidden';
-    lbMeasure();
-    lbPlace(false);
-    lbPreload(lbIndex);
     lbOpen = true;
+    lightboxCarousel.measure(); // must run after unhiding, or the track measures at zero width
+    lightboxCarousel.goTo(i, false);
     if (lightboxClose) lightboxClose.focus();
   }
 
@@ -700,7 +715,7 @@
     document.body.style.overflow = '';
     // Closing hands the visitor back to the same photo in the gallery,
     // even if they swiped further while the lightbox was open.
-    goTo(lbIndex, false);
+    gallery.goTo(lightboxCarousel.getIndex(), false);
     if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
   }
 
@@ -711,8 +726,8 @@
   window.addEventListener('keydown', (e) => {
     if (!lbOpen) return;
     if (e.key === 'Escape') closeLightbox();
-    else if (e.key === 'ArrowRight') lbGoTo(lbIndex - 1); // reading order is RTL: visual right = previous
-    else if (e.key === 'ArrowLeft') lbGoTo(lbIndex + 1);
+    else if (e.key === 'ArrowRight') lightboxCarousel.prev(); // reading order is RTL: visual right = previous
+    else if (e.key === 'ArrowLeft') lightboxCarousel.next();
   });
 
   let lbResizeTimer;
@@ -721,7 +736,10 @@
     () => {
       if (!lbOpen) return;
       clearTimeout(lbResizeTimer);
-      lbResizeTimer = setTimeout(() => { lbMeasure(); lbPlace(false); }, 120);
+      lbResizeTimer = setTimeout(() => {
+        lightboxCarousel.measure();
+        lightboxCarousel.render(false);
+      }, 120);
     },
     { passive: true }
   );

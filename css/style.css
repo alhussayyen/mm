@@ -718,19 +718,23 @@ li.recognition__group{ display:block; padding:1.5rem 0; border-bottom:1px solid 
 /* Live X (Twitter) embed — loaded eagerly via JS; skeleton shows until it
    resolves, real embed replaces it, fallback shows only if it fails.
    `zoom` (supported in Safari, Chrome, Edge) shrinks the embed's own type
-   and chrome by ~13% and reflows its box accordingly, so the card gets
-   both a smaller font and a shorter height — a real iframe's internal
-   styles can't be reached with plain CSS since it's cross-origin.
-   A fixed height + overflow:hidden keeps every tweet the same visual
-   height regardless of how much text/media the original tweet has. */
-.press-card__embed{ height:360px; overflow:hidden; }
-.press-card__embed iframe{ max-width:100%; width:100%; height:100% !important; zoom:.87; }
+   and chrome by ~13% and reflows its box accordingly — a real iframe's
+   internal styles can't be reached with plain CSS since it's cross-origin.
+   Height is intentionally auto, not fixed: X's own script sets the
+   iframe's real height once the tweet's actual content (text, media,
+   buttons) is known, and the card must grow to fit that exactly — a
+   fixed height + overflow:hidden would crop whatever doesn't fit, which
+   is exactly what this avoids. The flex track's default align-items:
+   stretch (see .press-carousel__track above) still keeps every card in
+   a row lined up to the same height, it just derives that height from
+   the tallest real tweet instead of an arbitrary pixel value. */
+.press-card__embed{ overflow:visible; }
+.press-card__embed iframe{ max-width:100%; width:100%; display:block; zoom:.87; }
 .press-card__fallback{
   display:none; flex-direction:column; align-items:center; justify-content:center;
   gap:.7rem; height:360px; text-align:center;
 }
 @media (max-width:700px){
-  .press-card__embed{ height:320px; }
   .press-card__fallback{ height:320px; }
 }
 .press-card__fallback svg{ width:26px; height:26px; fill:var(--ink); opacity:.8; }

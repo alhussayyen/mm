@@ -474,6 +474,7 @@
     let index = 0;
     let step = 0;
     let maxIndex = 0;
+    let visibleSlots = 0;
 
     const clampIndex = (i) => Math.max(0, Math.min(maxIndex, i));
 
@@ -484,7 +485,7 @@
       if (!rect.width) return; // track is hidden (lightbox not open yet) — nothing to measure
       const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
       step = rect.width + gap;
-      const visibleSlots = viewport.clientWidth / step;
+      visibleSlots = viewport.clientWidth / step;
       // How many one-slide steps fit before the viewport would start
       // showing past the last slide. Flooring against the *measured*
       // visible slot count — not itemCount - 1 — is what stops the
@@ -495,6 +496,18 @@
     }
 
     function positionX(i) {
+      // Every stop except the last sits at a uniform i * step — each
+      // transition moves by exactly one slide. The last stop is the one
+      // exception: if it used that same uniform formula, the final photo
+      // would only ever be revealed as a half-width trailing peek (there's
+      // nothing after it to peek from). Anchoring the last stop flush
+      // against the real end of the content instead guarantees the last
+      // photo is always shown in full — the peek simply moves to the
+      // leading edge for that one stop, same "n full + half peek" pattern,
+      // just mirrored. Every other stop is completely unaffected.
+      if (i === maxIndex && itemCount > visibleSlots) {
+        return direction * (itemCount - visibleSlots) * step;
+      }
       return direction * i * step;
     }
 

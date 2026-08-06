@@ -411,17 +411,19 @@
 })();
 
 /**
- * ---------- Capabilities section: single-image swipe carousel + lightbox ----------
+ * ---------- Capabilities section: right-anchored peek carousel + lightbox ----------
  * Same behaviour on every breakpoint (no separate mobile/desktop code
- * paths) and on touch or mouse (Pointer Events unify both): one photo on
- * screen at a time, a real-time 1:1 drag that follows the pointer, an
- * elastic snap-back on a short drag, a smooth advance to the next/prev
- * photo once the drag passes a distance threshold, GPU-accelerated
- * transform:translate3d(), a peek of both neighbours (see --cap-peek in
- * css/style.css), and a full-screen lightbox with identical drag
- * behaviour that hands the visitor back to the same photo in the gallery
- * on close. Section colours/type are untouched — only the browsing
- * mechanics are new. No third-party carousel library is used.
+ * paths — CSS alone switches 1.5 visible "slots" on mobile to 3.5 on
+ * desktop, see css/style.css) and on touch or mouse (Pointer Events unify
+ * both): the current photo(s) sit flush at the right edge with the next
+ * photo peeking in from the left, a real-time 1:1 drag that follows the
+ * pointer, an elastic snap-back on a short drag, a smooth advance to the
+ * next/prev photo once the drag passes a distance threshold, GPU-
+ * accelerated transform:translate3d(), and a full-screen lightbox with
+ * identical drag behaviour that hands the visitor back to the same photo
+ * in the gallery on close. Section colours/type/card design are untouched
+ * — only the browsing mechanics, nav position and caption layout are new.
+ * No third-party carousel library is used.
  */
 (() => {
   'use strict';
@@ -455,20 +457,34 @@
   let slideStep = 0; // one slide's full width, including the gap
 
   /* ---------- Small helper shared by the gallery drag and the lightbox drag ----------
-     opts.reverseTrack flips the sign applied to the live drag offset. The
-     main gallery is edge-anchored to the right with the *next* photo peeking
-     in from the left (see the CSS above): moving from slide i to slide i+1
-     requires the track to translate further right (not left), so a
-     right-to-left swipe (negative pointer delta) has to push the transform
-     positive to track toward that "next" position in real time instead of
-     away from it. The lightbox has no peek/edge-anchoring and keeps the
-     original, non-reversed 1:1 mapping. */
+     The live preview always follows the pointer 1:1 in real screen space —
+     translate3d(x) moves content rightward for positive x no matter how the
+     track's own flex layout is ordered, so the photo must track the finger
+     directly (baseX + delta) with no sign flip, or the drag feels reversed.
+
+     What differs between the two tracks is which physical direction counts
+     as "forward" (next()) once a drag crosses the threshold: the main
+     gallery is edge-anchored to the right with slide 0 first in the DOM
+     (row-reverse layout, see CSS), so its index→transform mapping runs
+     +index*step (advancing moves the track right) — the mirror image of
+     the lightbox's plain LTR track, which runs -index*step (advancing moves
+     the track left). opts.reverseIndex accounts for that mirroring so the
+     photo that was already sliding under the finger keeps sliding the same
+     way once released, instead of reversing direction on release.
+
+     opts.getMin/opts.getMax bound the live preview to the first/last slide's
+     resting position; past those bounds the drag is heavily dampened
+     (diminishing-returns rubber band, capped well under EDGE_MAX px) so
+     no empty track edge is ever exposed, then springs back on release. */
+  const EDGE_MAX = 56;
+  const EDGE_COEFF = 0.55;
+  const rubberBand = (overshoot) => (overshoot * EDGE_MAX * EDGE_COEFF) / (EDGE_MAX + EDGE_COEFF * overshoot);
+
   const attachDrag = (trackEl, opts) => {
     let dragging = false;
     let dragMoved = false;
     let startX = 0;
     let baseX = 0;
-    const sign = opts.reverseTrack ? -1 : 1;
 
     trackEl.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -485,9 +501,14 @@
       if (!dragging) return;
       const delta = e.clientX - startX;
       if (Math.abs(delta) > 4) dragMoved = true;
-      // Real-time: the photo tracks the pointer directly (proportionally,
-      // no lag), no easing while dragging.
-      trackEl.style.transform = `translate3d(${baseX + sign * delta}px,0,0)`;
+      // Real-time: the photo tracks the pointer directly (1:1, no lag, no
+      // inversion) while dragging.
+      let target = baseX + delta;
+      const min = opts.getMin ? opts.getMin() : -Infinity;
+      const max = opts.getMax ? opts.getMax() : Infinity;
+      if (target < min) target = min - rubberBand(min - target);
+      else if (target > max) target = max + rubberBand(target - max);
+      trackEl.style.transform = `translate3d(${target}px,0,0)`;
     });
 
     const endDrag = (e) => {
@@ -499,10 +520,12 @@
       const delta = endX - startX;
       const threshold = Math.max(48, opts.getStep() * 0.18);
       if (Math.abs(delta) > threshold) {
-        if (delta < 0) opts.next();
+        const draggedLeft = delta < 0;
+        const goForward = opts.reverseIndex ? !draggedLeft : draggedLeft;
+        if (goForward) opts.next();
         else opts.prev();
       } else {
-        opts.settle(); // short drag — elastic snap back to the current photo
+        opts.settle(); // short drag, or a drag stopped at an edge — elastic snap back
       }
       // Keep dragMoved true through the synthetic click the browser fires
       // right after this pointerup (that's what the capture-phase listener
@@ -587,10 +610,12 @@
   attachDrag(track, {
     getX: currentX,
     getStep: () => slideStep,
+    getMin: () => 0,
+    getMax: () => (total - 1) * slideStep,
     next: goNext,
     prev: goPrev,
     settle: () => place(!reduceMotion),
-    reverseTrack: true,
+    reverseIndex: true,
   });
 
   // Tapping (not dragging) a frame opens the lightbox at that photo.
@@ -649,6 +674,8 @@
   attachDrag(lightboxTrack, {
     getX: lbCurrentX,
     getStep: () => lbStep,
+    getMin: () => -(total - 1) * lbStep,
+    getMax: () => 0,
     next: () => lbGoTo(lbIndex + 1),
     prev: () => lbGoTo(lbIndex - 1),
     settle: () => lbPlace(!reduceMotion),

@@ -400,7 +400,6 @@ body{
   flex:0 0 calc(100% / 1.5);
   max-width:calc(100% / 1.5);
   padding-inline:clamp(6px, 1.2vw, 12px); /* gap between the peeking edges of adjacent frames */
-  display:flex; flex-direction:column;
   user-select:none; -webkit-user-select:none;
 }
 .cap-carousel__frame{

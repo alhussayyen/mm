@@ -177,6 +177,13 @@
   const track = document.getElementById('pressTrack');
   if (!root || !track) return;
 
+  // Mobile (<700px) uses a completely different, simpler single-tweet fade
+  // rotator (see the dedicated IIFE right below this one) — no clones, no
+  // drag, no arrows, no slide-transform. Bail out here so this track's
+  // children stay exactly as authored (no clone buffer) for that simpler
+  // rotator to drive directly. Desktop/tablet (≥700px) is untouched.
+  if (window.matchMedia('(max-width: 699px)').matches) return;
+
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const prevBtn = root.querySelector('[data-carousel-prev]');
   const nextBtn = root.querySelector('[data-carousel-next]');
@@ -367,6 +374,91 @@
       },
       true
     );
+  }
+})();
+
+/**
+ * ---------- Press section: mobile-only single-tweet fade rotator ----------
+ * Mobile (<700px) needs a completely different browsing model than the
+ * desktop carousel above (which bails out entirely at this breakpoint,
+ * leaving the track's original slides unmodified — no clone buffer): show
+ * exactly one tweet at a time, no arrows, no drag/swipe, no slide-transform
+ * motion, just a plain automatic fade every 5s, with no user controls at
+ * all. Desktop/tablet (≥700px) never runs this block.
+ */
+(() => {
+  'use strict';
+
+  if (!window.matchMedia('(max-width: 699px)').matches) return;
+
+  const root = document.getElementById('pressCarousel');
+  const track = document.getElementById('pressTrack');
+  if (!root || !track) return;
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const slides = Array.from(track.children);
+  if (slides.length < 2) return;
+
+  const FADE_MS = 500;
+  const INTERVAL_MS = 5000;
+
+  slides.forEach((slide, i) => {
+    slide.style.opacity = i === 0 ? '1' : '0';
+    slide.style.display = i === 0 ? 'block' : 'none';
+    slide.style.transition = reduceMotion ? 'none' : `opacity ${FADE_MS}ms ease`;
+  });
+
+  let current = 0;
+
+  const showNext = () => {
+    const next = (current + 1) % slides.length;
+    const from = slides[current];
+    const to = slides[next];
+
+    if (reduceMotion) {
+      from.style.display = 'none';
+      from.style.opacity = '0';
+      to.style.display = 'block';
+      to.style.opacity = '1';
+      current = next;
+      return;
+    }
+
+    to.style.display = 'block';
+    to.style.opacity = '0';
+    void to.offsetHeight; // force a reflow so the opacity change below actually transitions instead of jumping straight to 1
+    from.style.opacity = '0';
+    to.style.opacity = '1';
+    window.setTimeout(() => {
+      from.style.display = 'none';
+    }, FADE_MS);
+
+    current = next;
+  };
+
+  let timer = null;
+  const start = () => {
+    if (timer) return;
+    timer = window.setInterval(showNext, INTERVAL_MS);
+  };
+  const stop = () => {
+    if (timer) {
+      window.clearInterval(timer);
+      timer = null;
+    }
+  };
+
+  start();
+
+  // Pause the interval while the section is off-screen (purely a
+  // performance/battery courtesy — not a user-facing control) and resume
+  // it once it's back in view.
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((entry) => (entry.isIntersecting ? start() : stop())),
+      { threshold: 0.2 }
+    );
+    io.observe(root);
   }
 })();
 

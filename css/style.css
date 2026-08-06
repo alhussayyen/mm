@@ -252,14 +252,16 @@ body{
   .site-header__row{ display:grid; grid-template-columns:minmax(170px,1fr) auto minmax(170px,1fr); column-gap:2rem; }
   .brand{ justify-self:start; }
   .primary-nav{ display:flex; justify-self:center; }
-  .social-row--header{ display:flex; justify-self:end; }
+  .social-row--header{ display:flex; justify-self:end; gap:.85rem; }
+  .social-row--header a{ width:32px; height:32px; }
+  .social-row--header a svg{ width:14px; height:14px; }
   /* Desktop already shows the full nav, so the mobile hamburger has no
      job to do here — hide it outright (not just visually) rather than
      leaving a dead, focusable button sitting at the header's far edge. */
   .menu-toggle{ display:none; }
 }
 
-.menu-toggle{ width:34px; height:22px; position:relative; z-index:70; }
+.menu-toggle{ display:none; width:34px; height:22px; position:relative; z-index:70; }
 .menu-toggle span{
   position:absolute; right:0; width:100%; height:1.5px; background:var(--paper);
   transition:transform var(--dur-s) var(--ease), opacity var(--dur-s) var(--ease), background var(--dur-s);
@@ -315,22 +317,24 @@ body{
   color:var(--ink); background:var(--paper); border-color:var(--paper);
 }
 
-/* Header icons (desktop only) — same circle-outline / fill-on-hover
-   interaction as .social-row--contact at the bottom of the page, just
-   sized down to fit a slim header row (no header-height change) and
-   colored to follow the header's own existing light/dark swap between
-   its transparent-over-hero state and its scrolled state (see
-   .site-header.is-scrolled above), instead of the contact section's
-   fixed light-background colors. Hidden by default (mobile) — the
-   900px media query above switches it to display:flex alongside the nav. */
-.social-row--header{ display:none; gap:.85rem; }
+/* Header icons — same circle-outline / fill-on-hover interaction as
+   .social-row--contact at the bottom of the page, colored to follow the
+   header's own existing light/dark swap between its transparent-over-hero
+   state and its scrolled state (see .site-header.is-scrolled above),
+   instead of the contact section's fixed light-background colors.
+   Visible at every breakpoint: on mobile it sits where the hamburger used
+   to be (left side of the row), sized down small so 4 icons in one row
+   never take more than ~40% of the row's mobile width; on desktop
+   (≥900px) it sits beside the nav at its original larger size (see the
+   900px media query above, which restores the bigger size). */
+.social-row--header{ display:flex; gap:.35rem; }
 .social-row--header a{
   display:inline-flex; align-items:center; justify-content:center;
-  width:32px; height:32px; border-radius:50%;
+  width:22px; height:22px; border-radius:50%;
   border:1px solid rgba(250,248,245,.5); color:var(--paper);
   transition:color var(--dur-s) var(--ease), background var(--dur-s) var(--ease), border-color var(--dur-s) var(--ease);
 }
-.social-row--header a svg{ width:14px; height:14px; }
+.social-row--header a svg{ width:10px; height:10px; }
 .social-row--header a:hover, .social-row--header a:focus-visible{
   color:var(--ink); background:var(--paper); border-color:var(--paper);
 }
@@ -474,21 +478,35 @@ body{
    read, and the full overlay (title + paragraph, sized for a wide desktop
    image) ends up covering most of what little height is left. Below 900px
    (the same mobile/desktop split used elsewhere on the site): use a taller
-   ratio so the photo actually shows, keep only the title overlaid on the
-   image as a proper Hero Title, and move the paragraph into normal flow
-   right under the image, outside it. Desktop (≥900px) is untouched. */
+   ratio so the photo actually shows, and move both the title and the
+   paragraph into normal flow below the image (title first, then
+   description), out of the overlay entirely. Desktop (≥900px) keeps the
+   original overlaid title + paragraph, untouched. */
 @media (max-width:899px){
   .iconic .ph--cinema{ aspect-ratio:4/5; }
-  .iconic__caption{ max-width:none; padding:20px var(--gutter) 40px; }
+  /* Title moves out of the image overlay and into plain flow directly
+     under the photo — centered, and matching the description's own width
+     (both share the same var(--gutter) side padding with no extra
+     max-width, so their line lengths line up). Higher specificity than
+     the base `.iconic .iconic__caption{ grid-area:1/1; align-self:end; }`
+     rule above (same compound selector), so this fully replaces the
+     overlay placement instead of just adding to it. Desktop (≥900px)
+     keeps that original overlaid caption, completely untouched. */
+  .iconic .iconic__caption{
+    grid-area:2/1; align-self:auto; position:static;
+    max-width:none; text-align:center;
+    padding:20px var(--gutter) 0;
+    background:none;
+  }
   .iconic__caption h3{ font-size:clamp(1.5rem,6vw,2rem); margin:0; color:#FFFFFF; }
   .iconic__desc--overlay{ display:none; }
   /* Mobile only, per request: whole section on black with white text —
      size/margins/padding below are unchanged, only colors. */
   .iconic{ background:#000000; }
   .iconic__desc--below{
-    display:block; grid-column:1; grid-row:2; /* .iconic is display:grid with an implicit single cell (see .ph/.iconic__caption grid-area:1/1 above) — place this explicitly in a new row below the image instead of falling back into that same overlapping cell */
+    display:block; grid-column:1; grid-row:3; /* row 2 is now the title above (see .iconic .iconic__caption) — the description sits in its own row underneath */
     color:#FFFFFF; max-width:none;
-    padding:16px var(--gutter) 0;
+    padding:16px var(--gutter) 24px; /* 16px: same gap as above the title, so spacing above/below it reads as consistent; 24px: a small black cushion so the next section doesn't sit flush against the text */
   }
 }
 
@@ -572,14 +590,20 @@ body{
 .cap-tile__caption{
   direction:rtl; margin-top:1.15rem; color:var(--ink);
   text-align:center;
-  min-height:8.8rem; /* fits a 1-line number badge + a 2-line clamped title + a 2-line clamped description at their largest clamp() sizes, so every card ends up exactly this tall */
+  min-height:9.4rem; /* fits a 1-line number badge + a 2-line clamped title + a 2-line clamped description at their largest clamp() sizes, so every card ends up exactly this tall (raised slightly to match the title's taller line-height below) */
 }
 .cap-tile__num{
   display:block; font-family:var(--font-display); font-weight:500;
   font-size:.72rem; letter-spacing:.1em; color:var(--gold-deep); margin-bottom:.4rem;
 }
 .cap-tile__caption h3{
-  font-size:clamp(1.1rem,1.8vw,1.4rem); margin-bottom:.3rem;
+  /* line-height:1.4, not the site-wide heading default of 1.18 (see
+     h1,h2,h3,h4 in the Reset above) — at 1.18 the DIN Next Arabic
+     descenders on letters like ة/ي/ج sit right at (or past) the
+     -webkit-line-clamp box's own lower edge and get sliced off by its
+     required overflow:hidden. 1.4 gives them enough room without
+     changing font-size (still the same clamp() as before). */
+  font-size:clamp(1.1rem,1.8vw,1.4rem); line-height:1.4; margin-bottom:.3rem;
   display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
 }
 .cap-tile__caption p{
@@ -773,7 +797,17 @@ li.recognition__group{ display:block; padding:1.5rem 0; border-bottom:1px solid 
    it keeps filling the card exactly with no cropping or blank strip.
    Desktop (≥700px) is untouched. */
 @media (max-width:699px){
-  .press-carousel{ --pc-gap: 26px; padding-inline:58px; }
+  .press-carousel{ --pc-gap: 26px; padding-inline:0; }
+  /* Mobile: exactly one tweet on screen, no arrows, no drag/slide motion.
+     The track drops out of its flex row entirely into plain block flow —
+     no more horizontal transform track to drag — and a small dedicated
+     script (see the mobile-only fade rotator in js/main.js) crossfades
+     between slides automatically every 5s. Desktop/tablet (≥700px) keep
+     the original multi-up flex track, drag and arrows, untouched. */
+  .press-carousel__track{ display:block; transition:none; }
+  .press-carousel__slide{ width:100%; }
+  .press-carousel__slide:not(:first-child){ display:none; }
+  .press-carousel__arrow{ display:none; }
 }
 
 /* Entrance: fade + translateY(20px), 0.7s — overrides the site's default

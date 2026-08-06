@@ -3,6 +3,39 @@
    Design system: white / black / warm gold. Editorial, minimal, cinematic.
    ========================================================================== */
 
+/* ---------- Fonts: DIN Next Arabic (self-hosted, official files) ----------
+   Four real weight-specific files, one @font-face per weight — no fake
+   bold/light synthesis. font-display:swap avoids blocking first paint.
+   Paths are relative to this file (css/style.css → ../assets/fonts/). */
+@font-face{
+  font-family:'DIN Next Arabic';
+  src:url('../assets/fonts/din-next-arabic-light.otf') format('opentype');
+  font-weight:300;
+  font-style:normal;
+  font-display:swap;
+}
+@font-face{
+  font-family:'DIN Next Arabic';
+  src:url('../assets/fonts/din-next-arabic-regular.otf') format('opentype');
+  font-weight:400;
+  font-style:normal;
+  font-display:swap;
+}
+@font-face{
+  font-family:'DIN Next Arabic';
+  src:url('../assets/fonts/din-next-arabic-medium.otf') format('opentype');
+  font-weight:500;
+  font-style:normal;
+  font-display:swap;
+}
+@font-face{
+  font-family:'DIN Next Arabic';
+  src:url('../assets/fonts/din-next-arabic-bold.otf') format('opentype');
+  font-weight:700;
+  font-style:normal;
+  font-display:swap;
+}
+
 /* ---------- Design Tokens ---------- */
 :root{
   --white:      #FFFFFF;
@@ -18,8 +51,8 @@
   --muted:      #6B6357;
   --muted-light: rgba(250,248,245,.62);
 
-  --font-display: 'Alexandria', 'Segoe UI', sans-serif;
-  --font-body:    'IBM Plex Sans Arabic', 'Segoe UI', sans-serif;
+  --font-display: 'DIN Next Arabic', system-ui, sans-serif;
+  --font-body:    'DIN Next Arabic', system-ui, sans-serif;
 
   --container: 1360px;
   --gutter: clamp(20px, 5vw, 96px);
@@ -52,18 +85,19 @@ body{
   line-height:1.8;
   -webkit-font-smoothing:antialiased;
   overflow-x:hidden;
+  font-synthesis:none; /* only the four real DIN Next Arabic files render — no browser-faked bold/oblique */
 }
 
 .skip-link{
   position:absolute; right:-999px; top:0; z-index:999;
-  background:var(--gold); color:var(--black); padding:14px 22px; font-weight:600;
+  background:var(--gold); color:var(--black); padding:14px 22px; font-weight:500;
 }
 .skip-link:focus{ right:16px; top:16px; }
 
 /* ---------- Utility ---------- */
 .eyebrow{
   display:inline-flex; align-items:center; gap:.6em;
-  font-family:var(--font-body); font-weight:600; font-size:.8rem;
+  font-family:var(--font-body); font-weight:500; font-size:.8rem;
   letter-spacing:.12em; text-transform:uppercase; color:var(--gold-deep);
   margin-bottom:1.4rem;
 }
@@ -73,7 +107,7 @@ body{
 .btn{
   display:inline-flex; align-items:center; gap:.6em;
   padding:1.05em 2.2em; border:1px solid currentColor;
-  font-weight:600; font-size:.95rem; letter-spacing:.02em;
+  font-weight:500; font-size:.95rem; letter-spacing:.02em;
   border-radius:999px; transition:background var(--dur-s) var(--ease), color var(--dur-s) var(--ease), border-color var(--dur-s) var(--ease);
 }
 .btn--primary{ color:var(--ink); }
@@ -278,7 +312,7 @@ body{
   max-width:1180px; margin:0 auto; text-align:center;
 }
 .statement__text{
-  font-family:var(--font-display); font-weight:800; letter-spacing:-.015em;
+  font-family:var(--font-display); font-weight:700; letter-spacing:-.015em;
   font-size:clamp(1.9rem, 5.6vw, 4.4rem); line-height:1.35;
 }
 .statement__text .accent{ color:var(--gold); }
@@ -324,7 +358,7 @@ body{
 .who__copy h2{ font-size:clamp(2.1rem,4.4vw,3.2rem); margin-bottom:1.1rem; }
 .who__copy .lede{ font-size:1.2rem; color:var(--ink); font-weight:500; margin-bottom:1.4rem; }
 .who__copy p{ color:var(--muted); max-width:52ch; margin-bottom:1.2rem; }
-.quote-line{ font-family:var(--font-display); font-weight:600; color:var(--gold-deep); font-style:normal; font-size:1.15rem; }
+.quote-line{ font-family:var(--font-display); font-weight:500; color:var(--gold-deep); font-style:normal; font-size:1.15rem; }
 
 @media (min-width:860px){
   .who__grid{ grid-template-columns:.85fr 1.15fr; align-items:center; }
@@ -429,7 +463,7 @@ body{
   min-height:8.8rem; /* fits a 1-line number badge + a 2-line clamped title + a 2-line clamped description at their largest clamp() sizes, so every card ends up exactly this tall */
 }
 .cap-tile__num{
-  display:block; font-family:var(--font-display); font-weight:600;
+  display:block; font-family:var(--font-display); font-weight:500;
   font-size:.72rem; letter-spacing:.1em; color:var(--gold-deep); margin-bottom:.4rem;
 }
 .cap-tile__caption h3{
@@ -560,7 +594,7 @@ body{
 .clients__grid{
   max-width:1100px; margin:0 auto;
   display:grid; grid-template-columns:repeat(2,1fr); gap:2.2rem 1.5rem;
-  font-family:var(--font-display); font-weight:600; font-size:clamp(1rem,2vw,1.3rem);
+  font-family:var(--font-display); font-weight:500; font-size:clamp(1rem,2vw,1.3rem);
   color:var(--muted-light);
 }
 .clients__grid li{ display:flex; align-items:center; justify-content:center; }
@@ -583,14 +617,14 @@ body{
 .recognition__list > li{
   display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:.4rem 1rem;
   padding:1.5rem 0; border-bottom:1px solid var(--line);
-  font-family:var(--font-display); font-weight:600; font-size:clamp(1.05rem,2vw,1.4rem);
+  font-family:var(--font-display); font-weight:500; font-size:clamp(1.05rem,2vw,1.4rem);
 }
 .rec-tag{ font-family:var(--font-body); font-weight:400; font-size:.85rem; color:var(--muted); }
 
 li.recognition__group{ display:block; padding:1.5rem 0; border-bottom:1px solid var(--line); }
 .recognition__group-title{
   display:flex; justify-content:space-between; align-items:baseline;
-  font-family:var(--font-display); font-weight:600; font-size:clamp(1.05rem,2vw,1.4rem);
+  font-family:var(--font-display); font-weight:500; font-size:clamp(1.05rem,2vw,1.4rem);
 }
 .recognition__sublist{
   margin-top:1rem; padding-inline-start:1.6rem; display:flex; flex-direction:column; gap:.65rem;
@@ -702,7 +736,7 @@ li.recognition__group{ display:block; padding:1.5rem 0; border-bottom:1px solid 
 .press-card__fallback svg{ width:26px; height:26px; fill:var(--ink); opacity:.8; }
 .press-card__fallback span{ font-size:.78rem; color:var(--muted); }
 .press-card__fallback a{
-  font-size:.8rem; font-weight:600; color:var(--gold-deep);
+  font-size:.8rem; font-weight:500; color:var(--gold-deep);
   border-bottom:1px solid var(--gold); padding-bottom:2px; transition:color var(--dur-s);
 }
 .press-card__fallback a:hover{ color:var(--gold); }
@@ -723,7 +757,7 @@ li.recognition__group{ display:block; padding:1.5rem 0; border-bottom:1px solid 
 }
 .philosophy__quote{
   position:relative; z-index:2; max-width:1100px;
-  font-family:var(--font-display); font-weight:800; letter-spacing:-.01em;
+  font-family:var(--font-display); font-weight:700; letter-spacing:-.01em;
   font-size:clamp(1.7rem,4.6vw,3.4rem); line-height:1.4;
 }
 .philosophy__quote .accent{ color:var(--gold); }

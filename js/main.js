@@ -240,13 +240,38 @@
       if (reduceMotion) normalizeAfterTransition();
     };
 
-    if (nextBtn) nextBtn.addEventListener('click', goNext);
-    if (prevBtn) prevBtn.addEventListener('click', goPrev);
+    /* ---- Autoplay: advance one tweet every 7s ---- */
+    const AUTOPLAY_MS = 7000;
+    let autoplayTimer = null;
+    const stopAutoplay = () => {
+      if (autoplayTimer) {
+        clearInterval(autoplayTimer);
+        autoplayTimer = null;
+      }
+    };
+    const startAutoplay = () => {
+      if (reduceMotion) return; // an unrequested motion timer is exactly what prefers-reduced-motion asks sites to skip
+      stopAutoplay();
+      autoplayTimer = setInterval(goNext, AUTOPLAY_MS);
+    };
+    // Any manual move (arrow, drag) restarts the 7s countdown from zero
+    // instead of letting autoplay fire moments later on top of it, and
+    // hovering/focusing the carousel (e.g. to read or click into a tweet)
+    // pauses it until the visitor moves away.
+    const restartAutoplay = () => { if (autoplayTimer) startAutoplay(); };
+    root.addEventListener('mouseenter', stopAutoplay);
+    root.addEventListener('mouseleave', startAutoplay);
+    root.addEventListener('focusin', stopAutoplay);
+    root.addEventListener('focusout', startAutoplay);
+
+    if (nextBtn) nextBtn.addEventListener('click', () => { goNext(); restartAutoplay(); });
+    if (prevBtn) prevBtn.addEventListener('click', () => { goPrev(); restartAutoplay(); });
 
     // Initial position — synchronous, before the browser's first paint of
     // this section, so the clone buffer is never visible even for a frame.
     measure();
     place(currentIndex, false);
+    startAutoplay();
 
     let resizeTimer;
     window.addEventListener(
@@ -305,6 +330,7 @@
       } else {
         place(currentIndex, true);
       }
+      restartAutoplay();
     };
 
     track.addEventListener('pointerup', endDrag);
@@ -370,6 +396,17 @@
   const mountTweet = (container) => {
     const id = container.dataset.tweetId;
     if (!id) return;
+    // Without an explicit width, X's widget picks its own natural render
+    // width (its usual ~500-550px default) instead of the card's actual
+    // width, so on any card narrower than that it gets clipped by the
+    // carousel viewport's overflow:hidden, and on any card wider than the
+    // tweet's actual content it leaves blank iframe background on one side
+    // — both of which are exactly what was reported. Pinning `width` to the
+    // card's real measured width (clamped to X's supported 220–550px range)
+    // makes the embed always render at the card's own size, so `align:
+    // 'center'` above has no left-over space left to center within.
+    const measuredWidth = container.clientWidth || container.getBoundingClientRect().width;
+    const width = measuredWidth ? Math.max(220, Math.min(550, Math.round(measuredWidth))) : undefined;
     withTimeout(loadTwitterScript(), 9000)
       .then((twttr) =>
         withTimeout(
@@ -378,6 +415,7 @@
             dnt: true,
             conversation: 'none',
             align: 'center',
+            ...(width ? { width } : {}),
           }),
           9000
         )

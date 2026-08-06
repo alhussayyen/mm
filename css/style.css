@@ -357,6 +357,8 @@ body{
 [data-delay="6"]{ transition-delay:.6s; }
 [data-delay="7"]{ transition-delay:.7s; }
 [data-delay="8"]{ transition-delay:.8s; }
+[data-delay="9"]{ transition-delay:.9s; }
+[data-delay="10"]{ transition-delay:1s; }
 
 /* ---------- Who / About ---------- */
 .who{ padding:var(--section-pad) var(--gutter); background:var(--white); }
@@ -371,6 +373,15 @@ body{
 
 @media (min-width:860px){
   .who__grid{ grid-template-columns:.85fr 1.15fr; align-items:center; }
+}
+
+/* Mobile only: shrink the portrait slightly and give it a breathing margin
+   on each side (~10% of the section's width) instead of running edge to
+   edge, keeping it centered. aspect-ratio on .portrait-frame is untouched,
+   so the crop/proportions stay exactly the same, just smaller. Desktop
+   (≥860px, the breakpoint above) is unaffected. */
+@media (max-width:859px){
+  .who .portrait-frame{ max-width:80%; margin-inline:auto; }
 }
 
 /* ---------- Iconic (Bono) ---------- */
@@ -388,6 +399,31 @@ body{
 .iconic .iconic__caption{ grid-area:1/1; align-self:end; position:relative; }
 .iconic__caption h3{ font-size:clamp(1.8rem,4vw,2.8rem); margin:.4rem 0 .8rem; }
 .iconic__caption p{ color:var(--muted-light); max-width:60ch; }
+
+/* Mobile-only copy of the paragraph, rendered in normal flow below the
+   image instead of overlaid on it (see the two identical <p> tags in the
+   .iconic section markup) — hidden by default so desktop keeps exactly the
+   original single overlaid paragraph. */
+.iconic__desc--below{ display:none; }
+
+/* On narrow screens the 21/9 "cinema" ratio leaves the photo too short to
+   read, and the full overlay (title + paragraph, sized for a wide desktop
+   image) ends up covering most of what little height is left. Below 900px
+   (the same mobile/desktop split used elsewhere on the site): use a taller
+   ratio so the photo actually shows, keep only the title overlaid on the
+   image as a proper Hero Title, and move the paragraph into normal flow
+   right under the image, outside it. Desktop (≥900px) is untouched. */
+@media (max-width:899px){
+  .iconic .ph--cinema{ aspect-ratio:4/5; }
+  .iconic__caption{ max-width:none; padding:20px var(--gutter) 40px; }
+  .iconic__caption h3{ font-size:clamp(1.5rem,6vw,2rem); margin:0; }
+  .iconic__desc--overlay{ display:none; }
+  .iconic__desc--below{
+    display:block; grid-column:1; grid-row:2; /* .iconic is display:grid with an implicit single cell (see .ph/.iconic__caption grid-area:1/1 above) — place this explicitly in a new row below the image instead of falling back into that same overlapping cell */
+    color:var(--muted); max-width:none;
+    padding:16px var(--gutter) 0;
+  }
+}
 
 /* ---------- Stats ---------- */
 .stats{ padding:var(--section-pad) var(--gutter); background:var(--paper); }
@@ -628,6 +664,21 @@ body{
 .clients__more{ margin-top:2.4rem; color:var(--muted-light); font-size:.9rem; }
 @media (min-width:640px){ .clients__grid li{ flex-basis:calc((100% - 2 * 1.5rem) / 3); } } /* 3 per row — same width repeat(3,1fr) produced */
 @media (min-width:960px){ .clients__grid li{ flex-basis:calc((100% - 4 * 1.5rem) / 5); } } /* 5 per row — same width repeat(5,1fr) produced */
+
+/* Mobile only (below the 640px breakpoint above, where it's still 2 per
+   row): the 50%-wide cell above centers each logo in its own half, which
+   visually reads as two columns pushed apart with dead space between them.
+   Give each cell just enough width for the widest logo (FIFA, the widest
+   of the 13 at ~92px tall at this section's fixed 30px mobile logo height)
+   plus a small margin, so the pair sits close together instead of spread
+   across the full row width; .clients__grid's own justify-content:center
+   then centers that tight pair as a block, and the unchanged `gap` keeps
+   spacing even between every logo, in every row. Logo sizes themselves
+   (height:clamp(...) above) are untouched — only how much room the cell
+   around each one gets. */
+@media (max-width:639px){
+  .clients__grid li{ flex-basis:clamp(100px, 30vw, 150px); }
+}
 
 /* ---------- Recognition ---------- */
 .recognition{ padding:var(--section-pad) var(--gutter); background:var(--white); }

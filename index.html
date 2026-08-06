@@ -125,8 +125,15 @@
     </figure>
     <div class="iconic__caption reveal-up">
       <h3>هدف واحد، وقصة كاملة</h3>
-      <p>حين هزّ ماركوس ليوناردو الشباك أمام مانشستر سيتي في كأس العالم للأندية FIFA، لم تكن هناك فرصة لالتقاط لقطة ثانية. لحظة حاسمة واحدة، وإطار تاريخي واحد، يوثّق تفصيلًا لا يتكرر بدقة وهدوء.</p>
+      <p class="iconic__desc--overlay">حين هزّ ماركوس ليوناردو الشباك أمام مانشستر سيتي في كأس العالم للأندية FIFA، لم تكن هناك فرصة لالتقاط لقطة ثانية. لحظة حاسمة واحدة، وإطار تاريخي واحد، يوثّق تفصيلًا لا يتكرر بدقة وهدوء.</p>
     </div>
+    <!-- Mobile-only: identical copy of the paragraph above, rendered as plain
+         flow content directly under the image instead of overlaid on top of
+         it (see .iconic__desc--overlay / .iconic__desc--below in style.css —
+         exactly one of the two is display:none at any given breakpoint, so
+         only one copy is ever visible or exposed to screen readers). Desktop
+         markup/behaviour above is untouched. -->
+    <p class="iconic__desc--below">حين هزّ ماركوس ليوناردو الشباك أمام مانشستر سيتي في كأس العالم للأندية FIFA، لم تكن هناك فرصة لالتقاط لقطة ثانية. لحظة حاسمة واحدة، وإطار تاريخي واحد، يوثّق تفصيلًا لا يتكرر بدقة وهدوء.</p>
   </section>
 
   <!-- ===================== 5. EXPERIENCE / STATS ===================== -->
@@ -262,14 +269,13 @@
   <!-- ===================== SELECTED WORK ===================== -->
   <section class="work" id="work" aria-label="أعمال مختارة">
     <div class="work__intro reveal-up">
-      <span class="eyebrow">أعمال مختارة</span>
       <h2>معرض، لا أرشيف</h2>
       <p>كل مشروع هنا يُروى كقصة قائمة بذاتها — لا مجموعة صور، بل لحظة مختارة بعناية.</p>
     </div>
 
     <div class="work__feature reveal-scale">
-      <figure class="ph ph--full" data-caption="PLACEHOLDER — عمل مختار 01: مشروع رياضي كبير، لقطة غلاف تحريرية">
-        <div class="ph__texture" aria-hidden="true"></div>
+      <figure class="ph ph--full ph--photo">
+        <img src="assets/img/work-club-world-cup.jpg" alt="ملعب Hard Rock Stadium خلال كأس العالم للأندية FIFA 2025، بحضور جماهيري وأجواء احترافية" loading="lazy">
       </figure>
       <figcaption>
         <span>01 — Selected Work</span>
@@ -278,12 +284,12 @@
     </div>
 
     <div class="work__split">
-      <figure class="ph ph--tall reveal-up" data-caption="PLACEHOLDER — عمل مختار 02: جلسة بورتريه لشخصية عامة">
-        <div class="ph__texture" aria-hidden="true"></div>
+      <figure class="ph ph--tall ph--photo reveal-up">
+        <img src="assets/img/work-portrait-formal.jpg" alt="بورتريه رسمي لشخصية بالزي السعودي التقليدي والبشت الفاخر بإضاءة استوديو داكنة" loading="lazy">
         <figcaption><span>02</span><h3>حضور وهيبة</h3></figcaption>
       </figure>
-      <figure class="ph ph--tall reveal-up" data-delay="1" data-caption="PLACEHOLDER — عمل مختار 03: حملة تجارية لعلامة فاخرة">
-        <div class="ph__texture" aria-hidden="true"></div>
+      <figure class="ph ph--tall ph--photo reveal-up" data-delay="1">
+        <img src="assets/img/work-commercial-campaign.jpg" alt="حملة بصرية تجارية لامرأة بالزي التراثي السعودي تحمل سلة ورد فاخرة، ضمن هوية بصرية احتفالية" loading="lazy">
         <figcaption><span>03</span><h3>هوية تجارية</h3></figcaption>
       </figure>
     </div>
@@ -315,7 +321,6 @@
   <!-- ===================== 8. RECOGNITION ===================== -->
   <section class="recognition" aria-label="تغطيات وبطولات">
     <div class="recognition__intro reveal-up">
-      <span class="eyebrow">تغطيات موثّقة</span>
       <h2>على أرض الحدث، في كل مرة</h2>
     </div>
     <ul class="recognition__list">
@@ -340,6 +345,9 @@
       </li>
       <li class="reveal-up" data-delay="6"><span>كأس السوبر الإيطالي</span></li>
       <li class="reveal-up" data-delay="7"><span>كأس السوبر الإسباني</span></li>
+      <li class="reveal-up" data-delay="8"><span>كأس العالم للأندية</span><span class="rec-tag">الولايات المتحدة الأمريكية</span></li>
+      <li class="reveal-up" data-delay="9"><span>كأس آسيا لكرة القدم للمنتخبات 2023</span><span class="rec-tag">قطر</span></li>
+      <li class="reveal-up" data-delay="10"><span>كأس العرب FIFA 2025</span><span class="rec-tag">قطر</span></li>
     </ul>
   </section>
 

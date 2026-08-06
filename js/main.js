@@ -452,15 +452,23 @@
   });
 
   let index = 0;
-  let slideStep = 0;    // one slide's full width, including the gap
-  let centerOffset = 0; // px kept clear on each side so both neighbours peek through
+  let slideStep = 0; // one slide's full width, including the gap
 
-  /* ---------- Small helper shared by the gallery drag and the lightbox drag ---------- */
+  /* ---------- Small helper shared by the gallery drag and the lightbox drag ----------
+     opts.reverseTrack flips the sign applied to the live drag offset. The
+     main gallery is edge-anchored to the right with the *next* photo peeking
+     in from the left (see the CSS above): moving from slide i to slide i+1
+     requires the track to translate further right (not left), so a
+     right-to-left swipe (negative pointer delta) has to push the transform
+     positive to track toward that "next" position in real time instead of
+     away from it. The lightbox has no peek/edge-anchoring and keeps the
+     original, non-reversed 1:1 mapping. */
   const attachDrag = (trackEl, opts) => {
     let dragging = false;
     let dragMoved = false;
     let startX = 0;
     let baseX = 0;
+    const sign = opts.reverseTrack ? -1 : 1;
 
     trackEl.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -477,8 +485,9 @@
       if (!dragging) return;
       const delta = e.clientX - startX;
       if (Math.abs(delta) > 4) dragMoved = true;
-      // Real-time: the photo tracks the pointer directly, no easing while dragging.
-      trackEl.style.transform = `translate3d(${baseX + delta}px,0,0)`;
+      // Real-time: the photo tracks the pointer directly (proportionally,
+      // no lag), no easing while dragging.
+      trackEl.style.transform = `translate3d(${baseX + sign * delta}px,0,0)`;
     });
 
     const endDrag = (e) => {
@@ -524,10 +533,14 @@
     const rect = slides[0].getBoundingClientRect();
     const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
     slideStep = rect.width + gap;
-    centerOffset = Math.max(0, (viewport.clientWidth - rect.width) / 2);
   };
 
-  const currentX = () => centerOffset - index * slideStep;
+  // Slide 0 rests flush against the right edge with transform 0 (see the
+  // row-reverse layout in CSS); each further slide needs the track pushed
+  // that much further right to stay flush — see the attachDrag comment
+  // above for why this is a *positive*, increasing offset in a right-
+  // anchored RTL layout, unlike a typical left-anchored LTR carousel.
+  const currentX = () => index * slideStep;
 
   const updateArrows = () => {
     if (prevBtn) prevBtn.disabled = index <= 0;
@@ -577,6 +590,7 @@
     next: goNext,
     prev: goPrev,
     settle: () => place(!reduceMotion),
+    reverseTrack: true,
   });
 
   // Tapping (not dragging) a frame opens the lightbox at that photo.

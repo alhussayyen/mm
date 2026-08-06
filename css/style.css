@@ -367,21 +367,25 @@ body{
 .capabilities__intro h2{ font-size:clamp(2.1rem,4.6vw,3.4rem); max-width:16ch; }
 
 /* ---------- Capabilities carousel — single-image, swipeable gallery ----------
-   One photo on screen at a time (never the whole grid). A real-time-drag,
-   peeking, GPU-accelerated horizontal slider, same behaviour on touch and
-   mouse, with a matching full-screen lightbox. Section colours/type are
-   untouched — only the browsing mechanics changed. See js/main.js for the
-   drag/snap/lightbox logic. */
+   Apple-style edge-anchored peek carousel: the current photo sits flush at
+   the right edge of the frame (RTL reading start) and the next photo's
+   other half peeks in on the left, giving a sense there's more to see.
+   Mobile shows 1 full photo + a half-photo peek (1.5 "slots" across the
+   viewport); desktop shows 3 full photos + a half-photo peek (3.5 slots) —
+   never a 4th full photo. A real-time-drag, GPU-accelerated horizontal
+   slider, same behaviour on touch and mouse, with a matching full-screen
+   lightbox. Section colours/type/card design/image ratios are untouched —
+   only the browsing mechanics, nav position and caption layout changed.
+   See js/main.js for the drag/snap/lightbox logic. */
 .cap-carousel{
-  --cap-peek: clamp(18px, 5vw, 48px); /* sliver of the neighbouring photo visible on each side */
   position:relative;
   max-width:var(--container); margin:0 auto;
-  padding-inline:clamp(26px, 6vw, 64px); /* room for the arrow buttons */
 }
 .cap-carousel__viewport{ overflow:hidden; border-radius:20px; }
 .cap-carousel__track{
   display:flex;
   direction:ltr; /* keep the slide index/transform math predictable regardless of the page's RTL base direction — same technique as the press carousel */
+  flex-direction:row-reverse; /* slide 0 (first in the DOM) renders at the right — the carousel starts at the right-most photo, per the RTL reading order */
   touch-action:pan-y; /* let vertical page scroll pass through; we own horizontal */
   cursor:grab;
   will-change:transform;
@@ -390,9 +394,13 @@ body{
 }
 .cap-carousel__track.is-dragging{ transition:none; cursor:grabbing; }
 .cap-carousel__slide{
-  flex:0 0 calc(100% - (2 * var(--cap-peek)));
-  max-width:calc(100% - (2 * var(--cap-peek)));
-  padding-inline:clamp(8px, 1.6vw, 14px); /* gap between the peeking edges of adjacent frames */
+  /* 1.5 "slots" visible on mobile (1 full photo + a half-photo peek on the
+     left) — see the 900px breakpoint below for the 3.5-slot desktop version.
+     Both use the same "n full + half a peek" formula: 100% / (n + 0.5). */
+  flex:0 0 calc(100% / 1.5);
+  max-width:calc(100% / 1.5);
+  padding-inline:clamp(6px, 1.2vw, 12px); /* gap between the peeking edges of adjacent frames */
+  display:flex; flex-direction:column;
   user-select:none; -webkit-user-select:none;
 }
 .cap-carousel__frame{
@@ -408,16 +416,42 @@ body{
   object-fit:contain; object-position:center; /* full, undistorted photo — never cropped or stretched */
   pointer-events:none; /* the track handles the drag, not the <img> itself */
 }
-.cap-tile__caption{ direction:rtl; margin-top:1.15rem; color:var(--ink); }
+@media (min-width:900px){
+  .cap-carousel__slide{ flex:0 0 calc(100% / 3.5); max-width:calc(100% / 3.5); }
+}
+
+/* Caption — centered under the photo, its own fixed-height block so every
+   card lines up at the same height regardless of title/description length.
+   Title and description both clamp to a fixed number of lines with an
+   ellipsis instead of growing the card. */
+.cap-tile__caption{
+  direction:rtl; margin-top:1.15rem; color:var(--ink);
+  text-align:center;
+  min-height:8.8rem; /* fits a 1-line number badge + a 2-line clamped title + a 2-line clamped description at their largest clamp() sizes, so every card ends up exactly this tall */
+}
 .cap-tile__num{
   display:block; font-family:var(--font-display); font-weight:600;
   font-size:.72rem; letter-spacing:.1em; color:var(--gold-deep); margin-bottom:.4rem;
 }
-.cap-tile__caption h3{ font-size:clamp(1.1rem,1.8vw,1.4rem); margin-bottom:.3rem; }
-.cap-tile__caption p{ color:var(--muted); font-size:.92rem; max-width:48ch; }
+.cap-tile__caption h3{
+  font-size:clamp(1.1rem,1.8vw,1.4rem); margin-bottom:.3rem;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
+}
+.cap-tile__caption p{
+  color:var(--muted); font-size:.92rem; max-width:48ch; margin-inline:auto;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
+}
 
+/* Nav — grouped bottom-left, outside the photo frames, position fixed
+   regardless of which slide is showing. Same button design as before
+   (size/colours/hover untouched), only repositioned out of the carousel. */
+.cap-carousel__nav{
+  max-width:var(--container); margin:clamp(20px,3vw,32px) auto 0;
+  display:flex; justify-content:flex-start; align-items:center; gap:.55rem;
+  direction:ltr; /* forces "flex-start" to reliably mean the physical left edge, regardless of the page's RTL base — same technique as the track above */
+}
 .cap-carousel__arrow{
-  position:absolute; top:0; bottom:0; margin:auto; z-index:3;
+  position:relative; flex:0 0 auto; z-index:3;
   height:38px; width:38px;
   display:flex; align-items:center; justify-content:center;
   border-radius:50%;
@@ -427,8 +461,6 @@ body{
 }
 @media (min-width:700px){ .cap-carousel__arrow{ width:44px; height:44px; } }
 .cap-carousel__arrow svg{ width:18px; height:18px; }
-.cap-carousel__arrow--prev{ inset-inline-end:0; }
-.cap-carousel__arrow--next{ inset-inline-start:0; }
 .cap-carousel__arrow:hover, .cap-carousel__arrow:focus-visible{
   background:var(--ink); border-color:var(--ink); color:var(--paper); transform:scale(1.06);
 }
@@ -495,6 +527,32 @@ body{
 .work__split figcaption span{ font-size:.75rem; color:var(--gold-light); }
 .work__split figcaption h3{ font-size:1.3rem; margin-top:.3rem; }
 @media (min-width:760px){ .work__split{ grid-template-columns:1fr 1fr; } }
+
+/* Work gallery — image sizing, prepared ahead of real photography.
+   Card shape/aspect-ratio (ph--full, ph--tall), count, captions and spacing
+   are untouched. Once a real <img> replaces the .ph__texture placeholder
+   (per README), it will sit centered inside the card with equal padding on
+   every side instead of touching the edges — mobile and desktop each get
+   their own width/height/max-width/max-height, set independently via media
+   queries (no shared value scaled up/down). Adjust the numbers below once
+   real assets are in if the visual balance needs a nudge. */
+.work .ph--photo{ display:flex; align-items:center; justify-content:center; }
+.work .ph--photo img{
+  position:static;
+  object-fit:contain;
+  width:88%;
+  height:88%;
+  max-width:560px;
+  max-height:420px;
+}
+@media (min-width:760px){
+  .work .ph--photo img{
+    width:64%;
+    height:64%;
+    max-width:480px;
+    max-height:360px;
+  }
+}
 
 /* ---------- Clients ---------- */
 .clients{ padding:var(--section-pad) var(--gutter); background:var(--black); color:var(--paper); text-align:center; }

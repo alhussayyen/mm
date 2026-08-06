@@ -24,16 +24,32 @@
   /* ---------- Mobile menu ---------- */
   const menuToggle = document.getElementById('menuToggle');
   const mobileMenu = document.getElementById('mobileMenu');
+  // While the full-screen menu is open, the page content behind it is
+  // still in normal tab order even though it's visually covered — a
+  // keyboard user tabbing past the menu's last link would land on an
+  // invisible link/button underneath it. `inert` (supported in every
+  // current major browser) removes everything outside the menu from the
+  // tab order and from screen-reader navigation until it's closed, same
+  // as the lightbox below.
+  const inertSiblings = ['#main', '.site-footer'];
+  const setInertOutside = (isInert) => {
+    inertSiblings.forEach((sel) => {
+      const el = document.querySelector(sel);
+      if (el) el.inert = isInert;
+    });
+  };
   if (menuToggle && mobileMenu) {
     const closeMenu = () => {
       menuToggle.setAttribute('aria-expanded', 'false');
       mobileMenu.classList.remove('is-open');
       document.body.style.overflow = '';
+      setInertOutside(false);
     };
     const openMenu = () => {
       menuToggle.setAttribute('aria-expanded', 'true');
       mobileMenu.classList.add('is-open');
       document.body.style.overflow = 'hidden';
+      setInertOutside(true);
     };
     menuToggle.addEventListener('click', () => {
       const expanded = menuToggle.getAttribute('aria-expanded') === 'true';
@@ -149,7 +165,7 @@
  * ---------- Press section: infinite carousel ----------
  * Dependency-free (no Embla/Swiper download) so it can't add load weight —
  * the moving parts are the same as those libraries use internally: a flex
- * track moved with `transform: translateX()`, a small clone buffer at each
+ * track moved with `transform: translate3d()`, a small clone buffer at each
  * end for the illusion of an infinite loop, and Pointer Events for drag.
  * Runs BEFORE the X-embed lazy-loader below so the cloned slides it creates
  * are already in the DOM when that script scans for `.press-card__embed`.
@@ -200,16 +216,19 @@
       slideStep = sample.getBoundingClientRect().width + gap;
     };
 
+    // translate3d, not translateX — same 3D form as the capabilities
+    // carousel below, a more reliable GPU-layer-promotion hint paired
+    // with will-change:transform above.
     const place = (index, animate) => {
       currentIndex = index;
       const x = -currentIndex * slideStep;
       if (!animate) {
         track.style.transition = 'none';
-        track.style.transform = `translateX(${x}px)`;
+        track.style.transform = `translate3d(${x}px,0,0)`;
         void track.offsetHeight; // force reflow before restoring the transition
         track.style.transition = '';
       } else {
-        track.style.transform = `translateX(${x}px)`;
+        track.style.transform = `translate3d(${x}px,0,0)`;
       }
     };
 
@@ -312,7 +331,7 @@
       if (!dragging) return;
       const delta = e.clientX - dragStartX;
       if (Math.abs(delta) > 4) dragMoved = true;
-      track.style.transform = `translateX(${dragStartTranslate + delta}px)`;
+      track.style.transform = `translate3d(${dragStartTranslate + delta}px,0,0)`;
     });
 
     const endDrag = (e) => {
@@ -362,7 +381,15 @@
 (() => {
   'use strict';
 
-  const embeds = document.querySelectorAll('.press-card__embed');
+  // The infinite-loop carousel above clones a few slides at each end
+  // (aria-hidden="true") so the wrap-around transition has something to
+  // slide through. Mounting a full live X embed in each of those clones
+  // too would roughly double the number of iframes/network requests for
+  // content that's only ever on screen for the ~500ms of that transition
+  // — skip them and only mount the real, reachable slides.
+  const embeds = Array.from(document.querySelectorAll('.press-card__embed')).filter(
+    (el) => !el.closest('[aria-hidden="true"]')
+  );
   if (!embeds.length) return;
 
   let scriptPromise = null;
@@ -821,10 +848,23 @@
 
   attachDrag(lightboxTrack, lightboxCarousel);
 
+  // Same reasoning as the mobile menu's inertSiblings above: everything
+  // else on the page is still visually present (just covered by the
+  // full-screen lightbox), so it needs to be taken out of the tab order
+  // while the lightbox is open.
+  const lbInertSiblings = ['#siteHeader', '#main', '.site-footer'];
+  const setLbInertOutside = (isInert) => {
+    lbInertSiblings.forEach((sel) => {
+      const el = document.querySelector(sel);
+      if (el) el.inert = isInert;
+    });
+  };
+
   function openLightbox(i) {
     lastFocused = document.activeElement;
     lightbox.hidden = false;
     document.body.style.overflow = 'hidden';
+    setLbInertOutside(true);
     lbOpen = true;
     lightboxCarousel.measure(); // must run after unhiding, or the track measures at zero width
     lightboxCarousel.goTo(i, false);
@@ -836,6 +876,7 @@
     lbOpen = false;
     lightbox.hidden = true;
     document.body.style.overflow = '';
+    setLbInertOutside(false);
     // Closing hands the visitor back to the same photo in the gallery,
     // even if they swiped further while the lightbox was open.
     gallery.goTo(lightboxCarousel.getIndex(), false);

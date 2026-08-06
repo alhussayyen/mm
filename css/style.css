@@ -73,8 +73,8 @@ html{ scroll-behavior:smooth; }
 }
 img{ max-width:100%; display:block; }
 ul,ol{ list-style:none; }
-a{ color:inherit; text-decoration:none; }
-button{ font:inherit; background:none; border:0; cursor:pointer; color:inherit; }
+a{ color:inherit; text-decoration:none; -webkit-tap-highlight-color:transparent; }
+button{ font:inherit; background:none; border:0; cursor:pointer; color:inherit; -webkit-tap-highlight-color:transparent; }
 h1,h2,h3,h4{ font-family:var(--font-display); font-weight:700; line-height:1.18; letter-spacing:-.01em; }
 
 body{
@@ -95,14 +95,14 @@ body{
 .skip-link:focus{ right:16px; top:16px; }
 
 /* ---------- Utility ---------- */
-.eyebrow{
-  display:inline-flex; align-items:center; gap:.6em;
-  font-family:var(--font-body); font-weight:500; font-size:.8rem;
-  letter-spacing:.12em; text-transform:uppercase; color:var(--gold-deep);
-  margin-bottom:1.4rem;
+/* Visually hidden but still announced by screen readers / indexable by
+   crawlers — used for the page's semantic <h1> (see index.html hero
+   section), which duplicates the hero's own on-screen logo + kicker text
+   rather than adding a second visible heading. */
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
 }
-.eyebrow::before{ content:""; width:26px; height:1px; background:var(--gold); display:inline-block; }
-.eyebrow--light{ color:var(--gold-light); }
 
 .btn{
   display:inline-flex; align-items:center; gap:.6em;
@@ -153,13 +153,10 @@ body{
   width:56px; height:56px; z-index:1;
   border:1px solid rgba(216,185,137,.45); border-radius:50%;
 }
-.ph--hero{ aspect-ratio: 16/10; }
 .ph--portrait{ aspect-ratio: 4/5; }
 .ph--tall{ aspect-ratio: 3/4; }
-.ph--wide{ aspect-ratio: 16/9; }
 .ph--full{ aspect-ratio: 21/9; }
 .ph--cinema{ aspect-ratio: 21/9; }
-.ph--square{ aspect-ratio: 1/1; }
 .ph--ambient{ position:absolute; inset:0; aspect-ratio:auto; }
 
 /* Real photography variant — suppress placeholder decoration, add refined hover */
@@ -195,13 +192,18 @@ body{
   border-bottom:1px solid transparent;
 }
 .site-header.is-scrolled{
-  background:rgba(250,248,245,.86); backdrop-filter:blur(14px);
+  background:rgba(250,248,245,.86); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
   border-color:var(--line);
 }
 .site-header.is-scrolled .brand__mark--light{ display:none; }
 .site-header.is-scrolled .brand__mark--dark{ display:block; }
 .site-header.is-scrolled .primary-nav a{ color:var(--ink); }
 .site-header.is-scrolled .menu-toggle span{ background:var(--ink); }
+.site-header.is-scrolled .social-row--header a{ color:var(--ink); border-color:var(--line); }
+.site-header.is-scrolled .social-row--header a:hover,
+.site-header.is-scrolled .social-row--header a:focus-visible{
+  color:var(--paper); background:var(--ink); border-color:var(--ink);
+}
 
 .site-header__row{
   max-width:var(--container); margin:0 auto;
@@ -212,6 +214,18 @@ body{
 .brand__mark{ width:52px; height:auto; }
 .brand__mark--dark{ display:none; }
 .brand__mark--light{ display:block; }
+
+/* Wraps the nav + the header-only social icons so .site-header__row's
+   justify-content:space-between still only ever balances two things (the
+   logo and this group) — exactly the same 2-item layout it already had,
+   just with the icons riding along inside the second item. Hidden by
+   default so mobile (where this whole group was already display:none via
+   .primary-nav below) is completely unaffected; only appears at the same
+   900px breakpoint the nav itself switches on at. */
+.site-header__right{ display:none; }
+@media (min-width:900px){
+  .site-header__right{ display:flex; align-items:center; gap:2.2rem; }
+}
 
 .primary-nav{ display:none; gap:2.6rem; }
 .primary-nav a{
@@ -276,6 +290,40 @@ body{
 .social-row a{ font-size:.82rem; letter-spacing:.03em; color:inherit; transition:color var(--dur-s); }
 .social-row a:hover{ color:var(--gold); }
 
+/* Mobile full-screen menu footer — same circle-outline / fill-on-hover
+   icon pattern as the header/contact rows (see .social-row--header and
+   .social-row--contact), sized for the menu's small footer row. */
+.social-row--mobile{ gap:.75rem; }
+.social-row--mobile a{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:34px; height:34px; border-radius:50%;
+  border:1px solid rgba(250,248,245,.35); color:var(--paper);
+  transition:color var(--dur-s) var(--ease), background var(--dur-s) var(--ease), border-color var(--dur-s) var(--ease);
+}
+.social-row--mobile a svg{ width:15px; height:15px; }
+.social-row--mobile a:hover, .social-row--mobile a:focus-visible{
+  color:var(--ink); background:var(--paper); border-color:var(--paper);
+}
+
+/* Header icons (desktop only) — same circle-outline / fill-on-hover
+   interaction as .social-row--contact at the bottom of the page, just
+   sized down to fit a slim header row (no header-height change) and
+   colored to follow the header's own existing light/dark swap between
+   its transparent-over-hero state and its scrolled state (see
+   .site-header.is-scrolled above), instead of the contact section's
+   fixed light-background colors. */
+.social-row--header{ gap:.85rem; }
+.social-row--header a{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:32px; height:32px; border-radius:50%;
+  border:1px solid rgba(250,248,245,.5); color:var(--paper);
+  transition:color var(--dur-s) var(--ease), background var(--dur-s) var(--ease), border-color var(--dur-s) var(--ease);
+}
+.social-row--header a svg{ width:14px; height:14px; }
+.social-row--header a:hover, .social-row--header a:focus-visible{
+  color:var(--ink); background:var(--paper); border-color:var(--paper);
+}
+
 /* ---------- Hero ---------- */
 .hero{
   position:relative; height:100svh; min-height:600px;
@@ -324,7 +372,11 @@ body{
   font-family:var(--font-display); font-weight:700; letter-spacing:-.015em;
   font-size:clamp(1.9rem, 5.6vw, 4.4rem); line-height:1.35;
 }
-.statement__text .accent{ color:var(--gold); }
+/* gold-deep, not gold: on this section's paper background plain --gold
+   fails WCAG AA contrast (2.71:1, below even the 3:1 large-text floor) —
+   gold-deep passes (4.67:1) and is the same token already used for gold
+   accents elsewhere on light backgrounds (e.g. .cap-tile__num, .quote-line). */
+.statement__text .accent{ color:var(--gold-deep); }
 
 .reveal-lines span{
   display:inline-block; opacity:0; transform:translateY(.5em);
@@ -701,6 +753,17 @@ li.recognition__group{ display:block; padding:1.5rem 0; border-bottom:1px solid 
   padding-inline:44px;
 }
 @media (min-width:700px){ .press-carousel{ padding-inline:56px; } }
+/* Mobile two-up cards, slightly smaller with more breathing room between
+   them — both .press-carousel__slide's width formula and the track's own
+   flex gap read from --pc-gap, so raising it here shrinks each card and
+   widens the gap between the two visible tweets consistently, with no
+   separate values to keep in sync. The embed itself already scales to
+   whatever width its card ends up at (see fitEmbedToCard in main.js), so
+   it keeps filling the card exactly with no cropping or blank strip.
+   Desktop (≥700px) is untouched. */
+@media (max-width:699px){
+  .press-carousel{ --pc-gap: 22px; padding-inline:52px; }
+}
 
 /* Entrance: fade + translateY(20px), 0.7s — overrides the site's default
    reveal-up (48px/1s) for this element only via extra specificity. */
@@ -774,10 +837,6 @@ li.recognition__group{ display:block; padding:1.5rem 0; border-bottom:1px solid 
 .press-card__lines span:nth-child(1){ width:55%; }
 .press-card__lines span:nth-child(2){ width:92%; }
 .press-card__lines span:nth-child(3){ width:78%; }
-.press-card__note{
-  font-size:.78rem; color:var(--muted); letter-spacing:.01em;
-  border-top:1px dashed var(--line); padding-top:.9rem;
-}
 
 /* Live X (Twitter) embed — loaded eagerly via JS; skeleton shows until it
    resolves, real embed replaces it, fallback shows only if it fails.
@@ -812,7 +871,7 @@ li.recognition__group{ display:block; padding:1.5rem 0; border-bottom:1px solid 
   font-size:.8rem; font-weight:500; color:var(--gold-deep);
   border-bottom:1px solid var(--gold); padding-bottom:2px; transition:color var(--dur-s);
 }
-.press-card__fallback a:hover{ color:var(--gold); }
+.press-card__fallback a:hover{ color:var(--gold-deep); } /* --gold fails contrast on this light background, see .statement__text .accent above */
 
 @media (prefers-reduced-motion: reduce){
   .press-carousel__track{ transition:none; }
@@ -858,6 +917,12 @@ li.recognition__group{ display:block; padding:1.5rem 0; border-bottom:1px solid 
 .social-row--contact a svg{ width:18px; height:18px; }
 .social-row--contact a:hover, .social-row--contact a:focus-visible{
   color:var(--paper); background:var(--ink); border-color:var(--ink);
+}
+/* Icons now live in the header on desktop (moved, not duplicated) — this
+   copy stays exactly as before on mobile, where the header doesn't show
+   them. */
+@media (min-width:900px){
+  .social-row--contact{ display:none; }
 }
 @media (min-width:860px){ .contact__grid{ grid-template-columns:1.15fr .85fr; } }
 

@@ -446,7 +446,7 @@ body{
 }
 .cap-carousel__frame img{
   position:absolute; inset:0; width:100%; height:100%;
-  object-fit:contain; object-position:center; /* full, undistorted photo — never cropped or stretched */
+  object-fit:cover; object-position:center; /* full-bleed: fills the 4/5 frame edge-to-edge, cropping any excess evenly instead of letterboxing */
   pointer-events:none; /* the track handles the drag, not the <img> itself */
 }
 @media (min-width:900px){

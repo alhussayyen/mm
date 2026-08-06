@@ -270,15 +270,7 @@ body{
   padding:0 var(--gutter) clamp(20px,4vh,40px);
   font-size:.78rem; letter-spacing:.06em; color:var(--muted-light);
 }
-.scroll-cue{ display:flex; align-items:center; gap:.7rem; color:inherit; }
-.scroll-cue__line{
-  width:1px; height:34px; background:var(--muted-light); position:relative; overflow:hidden;
-}
-.scroll-cue__line::after{
-  content:""; position:absolute; top:-100%; right:0; width:100%; height:100%;
-  background:var(--gold); animation:cue 2.2s var(--ease) infinite;
-}
-@keyframes cue{ 0%{ top:-100%; } 60%{ top:100%; } 100%{ top:100%; } }
+.scroll-cue{ display:inline-flex; align-items:center; color:inherit; }
 
 /* ---------- Statement (kinetic sentence) ---------- */
 .statement{

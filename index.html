@@ -18,6 +18,9 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://platform.twitter.com">
+<link rel="preconnect" href="https://syndication.twitter.com">
+<link rel="preconnect" href="https://pbs.twimg.com">
 <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&amp;family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
 
 <link rel="icon" type="image/png" href="assets/img/logo-mark.png">
@@ -120,16 +123,14 @@
       <img src="assets/img/iconic-marcos-leonardo.jpg" alt="ماركوس ليوناردو يحتفل بهدفه أمام مانشستر سيتي في كأس العالم للأندية FIFA" width="2600" height="1733">
     </figure>
     <div class="iconic__caption reveal-up">
-      <span class="eyebrow eyebrow--light">لحظة موثّقة</span>
       <h3>هدف واحد، وقصة كاملة</h3>
-      <p>حين هزّ ماركوس ليوناردو الشباك أمام مانشستر سيتي في كأس العالم للأندية FIFA، لم تكن هناك فرصة لالتقاط لقطة ثانية. لحظة حاسمة واحدة، وإطار تاريخي واحد — وعدسة محمد كانت هناك لتختصر المباراة كلها في صورة.</p>
+      <p>حين هزّ ماركوس ليوناردو الشباك أمام مانشستر سيتي في كأس العالم للأندية FIFA، لم تكن هناك فرصة لالتقاط لقطة ثانية. لحظة حاسمة واحدة، وإطار تاريخي واحد، يوثّق تفصيلًا لا يتكرر بدقة وهدوء.</p>
     </div>
   </section>
 
   <!-- ===================== 5. EXPERIENCE / STATS ===================== -->
   <section class="stats" aria-label="الخبرة بالأرقام">
     <div class="stats__intro reveal-up">
-      <span class="eyebrow">المسيرة</span>
       <h3>أرقام لا تُقال، بل تُرى</h3>
     </div>
     <dl class="stats__grid">
@@ -149,7 +150,7 @@
       </div>
       <div class="stat reveal-up" data-delay="4">
         <dt>شراكة</dt>
-        <dd>وزارة الرياضة</dd>
+        <dd>SPL</dd>
       </div>
     </dl>
   </section>
@@ -157,88 +158,98 @@
   <!-- ===================== 6. CAPABILITIES ===================== -->
   <section class="capabilities" id="capabilities" aria-label="الخدمات والقدرات">
     <div class="capabilities__intro reveal-up">
-      <span class="eyebrow">القدرات</span>
       <h2>أينما تكون القصة، تكون العدسة</h2>
     </div>
 
-    <ul class="cap-gallery" id="capGallery">
-      <li class="cap-tile cap-tile--sports reveal-up">
-        <figure class="cap-tile__frame">
-          <img src="assets/img/cap-sports.jpg" alt="لاعب نادي الهلال يحتفل بالبطولة وسط زملائه بعد لقطة رياضية حاسمة" loading="lazy">
-          <div class="cap-tile__caption">
-            <span class="cap-tile__num">01</span>
-            <h3>التصوير الرياضي</h3>
-            <p>تغطيات ميدانية لأكبر البطولات المحلية والدولية، بتوقيت الحركة ولحظة الذروة.</p>
-          </div>
-        </figure>
-      </li>
+    <div class="cap-carousel reveal-up" id="capCarousel" data-delay="1">
+      <div class="cap-carousel__viewport" id="capViewport">
+        <ul class="cap-carousel__track" id="capTrack">
+          <li class="cap-carousel__slide" data-index="0">
+            <button type="button" class="cap-carousel__frame" data-cap-open aria-label="فتح الصورة كاملة — التصوير الرياضي">
+              <img src="assets/img/cap-sports.jpg" alt="لاعب نادي الهلال يحتفل بالبطولة وسط زملائه بعد لقطة رياضية حاسمة" loading="lazy">
+            </button>
+            <div class="cap-tile__caption">
+              <span class="cap-tile__num">01</span>
+              <h3>التصوير الرياضي</h3>
+              <p>تغطيات ميدانية لأكبر البطولات المحلية والدولية، بتوقيت الحركة ولحظة الذروة.</p>
+            </div>
+          </li>
 
-      <li class="cap-tile cap-tile--portrait reveal-up" data-delay="1">
-        <figure class="cap-tile__frame">
-          <img src="assets/img/cap-portrait.jpg" alt="بورتريه رسمي بإضاءة استوديو فاخرة لشخصية بالزي السعودي التقليدي" loading="lazy">
-          <div class="cap-tile__caption">
-            <span class="cap-tile__num">02</span>
-            <h3>التصوير الشخصي والبورتريه</h3>
-            <p>جلسات تصوير تعكس الهيبة والحضور، لقادة ومؤسسات وشخصيات عامة.</p>
-          </div>
-        </figure>
-      </li>
+          <li class="cap-carousel__slide" data-index="1">
+            <button type="button" class="cap-carousel__frame" data-cap-open aria-label="فتح الصورة كاملة — التصوير الشخصي والبورتريه">
+              <img src="assets/img/cap-portrait.jpg" alt="بورتريه رسمي بإضاءة استوديو فاخرة لشخصية بالزي السعودي التقليدي" loading="lazy">
+            </button>
+            <div class="cap-tile__caption">
+              <span class="cap-tile__num">02</span>
+              <h3>التصوير الشخصي والبورتريه</h3>
+              <p>جلسات تصوير تعكس الهيبة والحضور، لقادة ومؤسسات وشخصيات عامة.</p>
+            </div>
+          </li>
 
-      <li class="cap-tile cap-tile--commercial reveal-up" data-delay="2">
-        <figure class="cap-tile__frame">
-          <img src="assets/img/cap-commercial.jpg" alt="تصوير منتج تجاري لزجاجة عطر فاخرة بإضاءة استوديو دقيقة" loading="lazy">
-          <div class="cap-tile__caption">
-            <span class="cap-tile__num">03</span>
-            <h3>الإنتاج التجاري والمنتجات</h3>
-            <p>تصوير منتجات وحملات تجارية بجودة تليق بالعلامات الفاخرة.</p>
-          </div>
-        </figure>
-      </li>
+          <li class="cap-carousel__slide" data-index="2">
+            <button type="button" class="cap-carousel__frame" data-cap-open aria-label="فتح الصورة كاملة — الإنتاج التجاري والمنتجات">
+              <img src="assets/img/cap-commercial.jpg" alt="تصوير منتج تجاري لزجاجة عطر فاخرة بإضاءة استوديو دقيقة" loading="lazy">
+            </button>
+            <div class="cap-tile__caption">
+              <span class="cap-tile__num">03</span>
+              <h3>الإنتاج التجاري والمنتجات</h3>
+              <p>تصوير منتجات وحملات تجارية بجودة تليق بالعلامات الفاخرة.</p>
+            </div>
+          </li>
 
-      <li class="cap-tile cap-tile--events reveal-up" data-delay="3">
-        <figure class="cap-tile__frame">
-          <img src="assets/img/cap-events.jpg" alt="احتفال بطولي ضخم على منصة مضاءة وسط الألعاب النارية وحشد اللاعبين" loading="lazy">
-          <div class="cap-tile__caption">
-            <span class="cap-tile__num">04</span>
-            <h3>الفعاليات والمناسبات الكبرى</h3>
-            <p>توثيق بصري كامل للمؤتمرات والفعاليات الرسمية والحفلات الكبرى.</p>
-          </div>
-        </figure>
-      </li>
+          <li class="cap-carousel__slide" data-index="3">
+            <button type="button" class="cap-carousel__frame" data-cap-open aria-label="فتح الصورة كاملة — الفعاليات والمناسبات الكبرى">
+              <img src="assets/img/cap-events.jpg" alt="احتفال بطولي ضخم على منصة مضاءة وسط الألعاب النارية وحشد اللاعبين" loading="lazy">
+            </button>
+            <div class="cap-tile__caption">
+              <span class="cap-tile__num">04</span>
+              <h3>الفعاليات والمناسبات الكبرى</h3>
+              <p>توثيق بصري كامل للمؤتمرات والفعاليات الرسمية والحفلات الكبرى.</p>
+            </div>
+          </li>
 
-      <li class="cap-tile cap-tile--realestate reveal-up" data-delay="4">
-        <figure class="cap-tile__frame">
-          <img src="assets/img/cap-realestate.jpg" alt="مجلس فاخر بخطوط معمارية نظيفة وإضاءة داخلية دافئة" loading="lazy">
-          <div class="cap-tile__caption">
-            <span class="cap-tile__num">05</span>
-            <h3>التصوير العقاري والمعماري</h3>
-            <p>عدسة تُبرز الخطوط والمساحات، لمشاريع عقارية وهوية معمارية مميزة.</p>
-          </div>
-        </figure>
-      </li>
+          <li class="cap-carousel__slide" data-index="4">
+            <button type="button" class="cap-carousel__frame" data-cap-open aria-label="فتح الصورة كاملة — التصوير العقاري والمعماري">
+              <img src="assets/img/cap-realestate.jpg" alt="مجلس فاخر بخطوط معمارية نظيفة وإضاءة داخلية دافئة" loading="lazy">
+            </button>
+            <div class="cap-tile__caption">
+              <span class="cap-tile__num">05</span>
+              <h3>التصوير العقاري والمعماري</h3>
+              <p>عدسة تُبرز الخطوط والمساحات، لمشاريع عقارية وهوية معمارية مميزة.</p>
+            </div>
+          </li>
 
-      <li class="cap-tile cap-tile--restaurants reveal-up" data-delay="5">
-        <figure class="cap-tile__frame">
-          <img src="assets/img/cap-restaurants.jpg" alt="كوب شاي وأوراق شاي فاخرة بأسلوب تصوير تحريري لمقهى ديرز" loading="lazy">
-          <div class="cap-tile__caption">
-            <span class="cap-tile__num">06</span>
-            <h3>المطاعم والضيافة</h3>
-            <p>تصوير يحوّل التفاصيل الصغيرة — نكهة، ملمس، رائحة — إلى لغة بصرية شهية.</p>
-          </div>
-        </figure>
-      </li>
+          <li class="cap-carousel__slide" data-index="5">
+            <button type="button" class="cap-carousel__frame" data-cap-open aria-label="فتح الصورة كاملة — المطاعم والضيافة">
+              <img src="assets/img/cap-restaurants.jpg" alt="كوب شاي وأوراق شاي فاخرة بأسلوب تصوير تحريري لمقهى ديرز" loading="lazy">
+            </button>
+            <div class="cap-tile__caption">
+              <span class="cap-tile__num">06</span>
+              <h3>المطاعم والضيافة</h3>
+              <p>تصوير يحوّل التفاصيل الصغيرة — نكهة، ملمس، رائحة — إلى لغة بصرية شهية.</p>
+            </div>
+          </li>
 
-      <li class="cap-tile cap-tile--weddings reveal-up" data-delay="6">
-        <figure class="cap-tile__frame">
-          <img src="assets/img/cap-weddings.jpg" alt="لحظة احتفالية حميمية بالزي التراثي السعودي وسيف في مناسبة خاصة" loading="lazy">
-          <div class="cap-tile__caption">
-            <span class="cap-tile__num">07</span>
-            <h3>الزواجات والمناسبات الخاصة</h3>
-            <p>توثيق حميمي للحظات لا تتكرر، بحس سينمائي هادئ.</p>
-          </div>
-        </figure>
-      </li>
-    </ul>
+          <li class="cap-carousel__slide" data-index="6">
+            <button type="button" class="cap-carousel__frame" data-cap-open aria-label="فتح الصورة كاملة — الزواجات والمناسبات الخاصة">
+              <img src="assets/img/cap-weddings.jpg" alt="لحظة احتفالية حميمية بالزي التراثي السعودي وسيف في مناسبة خاصة" loading="lazy">
+            </button>
+            <div class="cap-tile__caption">
+              <span class="cap-tile__num">07</span>
+              <h3>الزواجات والمناسبات الخاصة</h3>
+              <p>توثيق حميمي للحظات لا تتكرر، بحس سينمائي هادئ.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <button type="button" class="cap-carousel__arrow cap-carousel__arrow--prev" id="capPrev" aria-label="الصورة السابقة">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <button type="button" class="cap-carousel__arrow cap-carousel__arrow--next" id="capNext" aria-label="الصورة التالية">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+    </div>
   </section>
 
   <!-- ===================== SELECTED WORK ===================== -->
@@ -274,7 +285,6 @@
   <!-- ===================== 7. CLIENTS ===================== -->
   <section class="clients" id="clients" aria-label="جهات تعامل معها">
     <div class="clients__intro reveal-up">
-      <span class="eyebrow eyebrow--light">جهات وثقتني</span>
       <h2>ثقة لا تُشترى</h2>
     </div>
     <ul class="clients__grid reveal-up" data-delay="1">
@@ -302,23 +312,35 @@
       <h2>على أرض الحدث، في كل مرة</h2>
     </div>
     <ul class="recognition__list">
-      <li class="reveal-up" data-delay="1"><span>كأس العالم للأندية FIFA</span><span class="rec-tag">الولايات المتحدة، 2025</span></li>
-      <li class="reveal-up" data-delay="2"><span>كأس العرب للمنتخبات</span><span class="rec-tag">قطر، 2025</span></li>
-      <li class="reveal-up" data-delay="3"><span>كأس آسيا للمنتخبات</span><span class="rec-tag">قطر، 2023</span></li>
-      <li class="reveal-up" data-delay="4"><span>دوري أبطال آسيا</span><span class="rec-tag">السعودية، الخليج، اليابان</span></li>
-      <li class="reveal-up" data-delay="5"><span>كأس السوبر السعودي</span><span class="rec-tag">أمام الإيطالي والإسباني</span></li>
-      <li class="reveal-up" data-delay="6"><span>كأس خادم الحرمين الشريفين</span><span class="rec-tag">المملكة العربية السعودية</span></li>
-      <li class="reveal-up" data-delay="7"><span>الدوري السعودي للمحترفين</span><span class="rec-tag">تغطية موسمية</span></li>
-      <li class="reveal-up" data-delay="8"><span>بطولات الاتحاد السعودي</span><span class="rec-tag">الريشة، التنس، الطاولة، البادل</span></li>
+      <li class="reveal-up" data-delay="1"><span>كأس العرب FIFA</span><span class="rec-tag">2026</span></li>
+      <li class="reveal-up" data-delay="2"><span>كأس آسيا</span><span class="rec-tag">2023</span></li>
+      <li class="recognition__group reveal-up" data-delay="3">
+        <div class="recognition__group-title"><span>بطولات الاتحاد السعودي لكرة القدم</span></div>
+        <ul class="recognition__sublist">
+          <li><span>كأس خادم الحرمين الشريفين</span></li>
+          <li><span>كأس السوبر السعودي</span></li>
+        </ul>
+      </li>
+      <li class="reveal-up" data-delay="4"><span>الدوري السعودي للمحترفين (SPL)</span><span class="rec-tag">منذ 2013</span></li>
+      <li class="recognition__group reveal-up" data-delay="5">
+        <div class="recognition__group-title"><span>بطولات الاتحادات السعودية</span></div>
+        <ul class="recognition__sublist">
+          <li><span>الريشة الطائرة</span></li>
+          <li><span>كرة الطاولة</span></li>
+          <li><span>التنس</span></li>
+          <li><span>البادل</span></li>
+        </ul>
+      </li>
+      <li class="reveal-up" data-delay="6"><span>كأس السوبر الإيطالي</span></li>
+      <li class="reveal-up" data-delay="7"><span>كأس السوبر الإسباني</span></li>
     </ul>
   </section>
 
   <!-- ===================== PRESS / X RECOGNITION ===================== -->
   <section class="press" id="press" aria-label="عدستي كما يراها الآخرون">
     <div class="press__intro reveal-up">
-      <span class="eyebrow">صدى</span>
       <h2>عدستي كما يراها الآخرون</h2>
-      <p>حين تنشر جهة رسمية صورة تحمل توقيعي، فتلك أبلغ شهادة. هنا مساحة مخصّصة للتغريدات الرسمية — جاهزة لاستقبال الروابط الحقيقية فور توفّرها.</p>
+      <p>هذه المساحة توثّق منشورات الجهات الرسمية التي استخدمت صوري ضمن تغطياتها الإعلامية، كما ظهرت في حساباتها الرسمية.</p>
     </div>
 
     <div class="press-carousel reveal-up" id="pressCarousel">
@@ -444,7 +466,6 @@
   <section class="contact" id="contact" aria-label="تواصل">
     <div class="contact__grid">
       <div class="contact__copy reveal-up">
-        <span class="eyebrow">للتواصل</span>
         <h2>لنصنع القصة القادمة</h2>
         <p>سواء كان مشروعًا رياضيًا كبيرًا، أو حملة تجارية، أو لحظة تستحق أن تُروى — العدسة جاهزة.</p>
         <a class="btn btn--primary" href="mailto:malhussayyen@gmail.com">راسلني الآن</a>
@@ -455,20 +476,53 @@
         </dl>
 
         <div class="social-row social-row--contact">
-          <a href="#" aria-label="سناب شات">Snapchat</a>
-          <a href="#" aria-label="تيك توك">TikTok</a>
-          <a href="#" aria-label="إكس">X</a>
-          <a href="#" aria-label="انستغرام">Instagram</a>
+          <a href="#" aria-label="حسابي على إكس" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.9 2H22l-7.6 8.7L23.3 22H16.9l-5-6.5-5.7 6.5H2.9l8.1-9.3L2 2h6.6l4.5 6 5.8-6zm-1.1 18h1.7L7.3 3.9H5.5L17.8 20z"/></svg>
+          </a>
+          <a href="#" aria-label="حسابي على إنستغرام" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="5"></rect>
+              <circle cx="12" cy="12" r="4.2"></circle>
+              <circle cx="17.4" cy="6.6" r="1" fill="currentColor" stroke="none"></circle>
+            </svg>
+          </a>
+          <a href="#" aria-label="حسابي على لينكدإن" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 11-.02 5 2.5 2.5 0 01.02-5zM3 8.98h4v11.52H3zM9 8.98h3.8v1.57h.05c.53-.95 1.83-1.95 3.77-1.95 4.03 0 4.78 2.55 4.78 5.87v6.03h-4v-5.35c0-1.28-.02-2.92-1.78-2.92-1.78 0-2.06 1.39-2.06 2.83v5.44H9V8.98z"></path></svg>
+          </a>
+          <a href="mailto:malhussayyen@gmail.com" aria-label="راسلني عبر البريد الإلكتروني">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+              <rect x="2.5" y="5" width="19" height="14" rx="2.4"></rect>
+              <path d="M3.5 6.5l8.5 7 8.5-7"></path>
+            </svg>
+          </a>
         </div>
       </div>
 
-      <figure class="ph ph--portrait reveal-scale" data-caption="PLACEHOLDER — بورتريه ختامي، إطار ذهبي رفيع، إضاءة دافئة">
-        <div class="ph__texture" aria-hidden="true"></div>
+      <figure class="ph ph--portrait ph--photo reveal-scale">
+        <img src="assets/img/contact-silhouette.jpg" alt="لقطة تحريرية بأسلوب ظليّ للاعب يحتفل خلال مباراة، بتوقيع محمد الحصين" width="1400" height="1936">
       </figure>
     </div>
   </section>
 
 </main>
+
+<!-- ===================== CAPABILITIES LIGHTBOX ===================== -->
+<div class="cap-lightbox" id="capLightbox" hidden>
+  <button type="button" class="cap-lightbox__close" id="capLightboxClose" aria-label="إغلاق الصورة">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+  <div class="cap-lightbox__viewport" id="capLightboxViewport">
+    <ul class="cap-lightbox__track" id="capLightboxTrack">
+      <li class="cap-lightbox__slide" data-index="0"><img alt="لاعب نادي الهلال يحتفل بالبطولة وسط زملائه بعد لقطة رياضية حاسمة" loading="lazy"></li>
+      <li class="cap-lightbox__slide" data-index="1"><img alt="بورتريه رسمي بإضاءة استوديو فاخرة لشخصية بالزي السعودي التقليدي" loading="lazy"></li>
+      <li class="cap-lightbox__slide" data-index="2"><img alt="تصوير منتج تجاري لزجاجة عطر فاخرة بإضاءة استوديو دقيقة" loading="lazy"></li>
+      <li class="cap-lightbox__slide" data-index="3"><img alt="احتفال بطولي ضخم على منصة مضاءة وسط الألعاب النارية وحشد اللاعبين" loading="lazy"></li>
+      <li class="cap-lightbox__slide" data-index="4"><img alt="مجلس فاخر بخطوط معمارية نظيفة وإضاءة داخلية دافئة" loading="lazy"></li>
+      <li class="cap-lightbox__slide" data-index="5"><img alt="كوب شاي وأوراق شاي فاخرة بأسلوب تصوير تحريري لمقهى ديرز" loading="lazy"></li>
+      <li class="cap-lightbox__slide" data-index="6"><img alt="لحظة احتفالية حميمية بالزي التراثي السعودي وسيف في مناسبة خاصة" loading="lazy"></li>
+    </ul>
+  </div>
+</div>
 
 <!-- ===================== FOOTER ===================== -->
 <footer class="site-footer">

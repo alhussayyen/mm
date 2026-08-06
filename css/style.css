@@ -366,154 +366,115 @@ body{
 .capabilities__intro{ max-width:var(--container); margin:0 auto clamp(40px,7vw,88px); }
 .capabilities__intro h2{ font-size:clamp(2.1rem,4.6vw,3.4rem); max-width:16ch; }
 
-/* ---------- Capabilities gallery — editorial portfolio (Apple / Porsche) ----------
-   Every frame keeps the exact same 4:5 ratio, border and shadow — sizes
-   never change. Asymmetry comes only from a gentle vertical stagger (a
-   repeating, deliberate rhythm, not randomness), so the row never reads as
-   one rigid line. The caption lives inside the photo, low, over a soft
-   gradient, and retreats downward out of the frame on hover. */
-.cap-gallery{
-  --cap-gap: clamp(28px, 4vw, 56px);
+/* ---------- Capabilities carousel — single-image, swipeable gallery ----------
+   One photo on screen at a time (never the whole grid). A real-time-drag,
+   peeking, GPU-accelerated horizontal slider, same behaviour on touch and
+   mouse, with a matching full-screen lightbox. Section colours/type are
+   untouched — only the browsing mechanics changed. See js/main.js for the
+   drag/snap/lightbox logic. */
+.cap-carousel{
+  --cap-peek: clamp(18px, 5vw, 48px); /* sliver of the neighbouring photo visible on each side */
+  position:relative;
   max-width:var(--container); margin:0 auto;
-  display:grid; align-items:start;
-  gap:var(--cap-gap) clamp(24px, 3.4vw, 48px);
-  grid-template-columns:1fr;
+  padding-inline:clamp(26px, 6vw, 64px); /* room for the arrow buttons */
 }
-@media (min-width:640px){
-  .cap-gallery{ grid-template-columns:repeat(2, 1fr); }
-  .cap-tile:nth-child(2n){ margin-top:clamp(22px, 4vw, 44px); }
+.cap-carousel__viewport{ overflow:hidden; border-radius:20px; }
+.cap-carousel__track{
+  display:flex;
+  direction:ltr; /* keep the slide index/transform math predictable regardless of the page's RTL base direction — same technique as the press carousel */
+  touch-action:pan-y; /* let vertical page scroll pass through; we own horizontal */
+  cursor:grab;
+  will-change:transform;
+  transform:translate3d(0,0,0);
+  transition:transform 360ms cubic-bezier(0,0,.2,1); /* ease-out, within the 300–400ms window */
 }
-@media (min-width:1024px){
-  .cap-gallery{ grid-template-columns:repeat(3, 1fr); }
-  .cap-tile:nth-child(2n){ margin-top:0; } /* reset the tablet rhythm before applying the 3-up one */
-  .cap-tile:nth-child(3n+2){ margin-top:clamp(28px, 4vw, 56px); }
-  .cap-tile:nth-child(3n){ margin-top:clamp(14px, 2vw, 28px); }
+.cap-carousel__track.is-dragging{ transition:none; cursor:grabbing; }
+.cap-carousel__slide{
+  flex:0 0 calc(100% - (2 * var(--cap-peek)));
+  max-width:calc(100% - (2 * var(--cap-peek)));
+  padding-inline:clamp(8px, 1.6vw, 14px); /* gap between the peeking edges of adjacent frames */
+  user-select:none; -webkit-user-select:none;
 }
-
-.cap-tile__frame{
-  position:relative; overflow:hidden;
+.cap-carousel__frame{
+  position:relative; display:block; width:100%; padding:0; border:0; background:var(--charcoal);
   aspect-ratio:4/5;
   border-radius:20px;
+  overflow:hidden;
   border:1px solid #D9D9D9;
   box-shadow:0 8px 30px rgba(0,0,0,.06);
 }
-.cap-tile__frame img{
+.cap-carousel__frame img{
   position:absolute; inset:0; width:100%; height:100%;
-  object-fit:cover; object-position:center;
-  transition:transform 450ms ease-in-out;
+  object-fit:contain; object-position:center; /* full, undistorted photo — never cropped or stretched */
+  pointer-events:none; /* the track handles the drag, not the <img> itself */
 }
-.cap-tile--portrait .cap-tile__frame img{ object-position:50% 20%; } /* keep the face safely in frame */
-.cap-tile:hover .cap-tile__frame img,
-.cap-tile:focus-within .cap-tile__frame img{ transform:scale(1.02); }
-
-/* Caption — inside the frame, low, over a light gradient for legibility.
-   On hover it slides down and out (translateY), clipped by the frame's own
-   overflow:hidden, leaving the photograph on its own. Kept visible on
-   keyboard focus so the title is never hidden from non-pointer users. */
-.cap-tile__caption{
-  position:absolute; inset-inline:0; bottom:0; z-index:2;
-  padding:clamp(20px,3.4vw,30px) clamp(18px,2.8vw,26px) clamp(16px,2.6vw,22px);
-  background:linear-gradient(0deg, rgba(11,11,10,.7) 0%, rgba(11,11,10,.3) 55%, transparent 100%);
-  color:var(--paper);
-  transition:transform 450ms ease-in-out;
-}
-.cap-tile:hover .cap-tile__caption{ transform:translateY(100%); }
+.cap-tile__caption{ direction:rtl; margin-top:1.15rem; color:var(--ink); }
 .cap-tile__num{
   display:block; font-family:var(--font-display); font-weight:600;
-  font-size:.72rem; letter-spacing:.1em; color:var(--gold-light); margin-bottom:.4rem;
+  font-size:.72rem; letter-spacing:.1em; color:var(--gold-deep); margin-bottom:.4rem;
 }
-.cap-tile__caption h3{ font-size:clamp(1.05rem,1.6vw,1.25rem); margin-bottom:.3rem; color:var(--paper); }
-.cap-tile__caption p{ color:var(--muted-light); font-size:.86rem; max-width:32ch; }
+.cap-tile__caption h3{ font-size:clamp(1.1rem,1.8vw,1.4rem); margin-bottom:.3rem; }
+.cap-tile__caption p{ color:var(--muted); font-size:.92rem; max-width:48ch; }
+
+.cap-carousel__arrow{
+  position:absolute; top:0; bottom:0; margin:auto; z-index:3;
+  height:38px; width:38px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:50%;
+  background:var(--white); border:1px solid var(--line); color:var(--ink);
+  transition:background var(--dur-s) var(--ease), border-color var(--dur-s) var(--ease),
+    color var(--dur-s) var(--ease), transform var(--dur-s) var(--ease);
+}
+@media (min-width:700px){ .cap-carousel__arrow{ width:44px; height:44px; } }
+.cap-carousel__arrow svg{ width:18px; height:18px; }
+.cap-carousel__arrow--prev{ inset-inline-end:0; }
+.cap-carousel__arrow--next{ inset-inline-start:0; }
+.cap-carousel__arrow:hover, .cap-carousel__arrow:focus-visible{
+  background:var(--ink); border-color:var(--ink); color:var(--paper); transform:scale(1.06);
+}
+.cap-carousel__arrow[disabled]{ opacity:.3; pointer-events:none; }
 
 @media (prefers-reduced-motion: reduce){
-  .cap-tile__frame img,
-  .cap-tile__caption{ transition:none; }
-  .cap-tile:hover .cap-tile__frame img{ transform:none; }
-  .cap-tile:hover .cap-tile__caption{ transform:none; }
+  .cap-carousel__track{ transition:none; }
 }
 
-/* Entrance: fade + translateY(20px), staggered ~80ms per tile — overrides
-   the site's default reveal-up (48px/1s) for these tiles only. Composes
-   cleanly with the stagger margin above: margin sets the resting position,
-   this transform only animates the arrival. */
-.cap-tile.reveal-up{
-  transform:translateY(20px);
-  transition:opacity .8s var(--ease), transform .8s var(--ease);
+/* ---------- Capabilities lightbox — full-screen viewer, same drag model ---------- */
+.cap-lightbox{
+  position:fixed; inset:0; z-index:200;
+  background:rgba(11,11,10,.97);
 }
-.cap-tile[data-delay="1"]{ transition-delay:.08s; }
-.cap-tile[data-delay="2"]{ transition-delay:.16s; }
-.cap-tile[data-delay="3"]{ transition-delay:.24s; }
-.cap-tile[data-delay="4"]{ transition-delay:.32s; }
-.cap-tile[data-delay="5"]{ transition-delay:.4s; }
-.cap-tile[data-delay="6"]{ transition-delay:.48s; }
+.cap-lightbox[hidden]{ display:none; }
+.cap-lightbox__viewport{ width:100%; height:100%; overflow:hidden; }
+.cap-lightbox__track{
+  display:flex; height:100%;
+  direction:ltr; /* same predictable-math technique as the main carousel track */
+  touch-action:pan-y; cursor:grab;
+  will-change:transform;
+  transform:translate3d(0,0,0);
+  transition:transform 360ms cubic-bezier(0,0,.2,1);
+}
+.cap-lightbox__track.is-dragging{ transition:none; cursor:grabbing; }
+.cap-lightbox__slide{
+  flex:0 0 100%; max-width:100%; height:100%;
+  display:flex; align-items:center; justify-content:center;
+  padding:clamp(20px,5vw,56px);
+}
+.cap-lightbox__slide img{
+  max-width:100%; max-height:100%; width:auto; height:auto;
+  object-fit:contain; user-select:none; -webkit-user-select:none; pointer-events:none;
+}
+.cap-lightbox__close{
+  position:absolute; top:clamp(16px,3vw,32px); inset-inline-end:clamp(16px,3vw,32px); z-index:2;
+  width:44px; height:44px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(250,248,245,.08); border:1px solid rgba(250,248,245,.25); color:var(--paper);
+  transition:background var(--dur-s) var(--ease);
+}
+.cap-lightbox__close svg{ width:20px; height:20px; }
+.cap-lightbox__close:hover, .cap-lightbox__close:focus-visible{ background:rgba(250,248,245,.18); }
 
-/* ---------- Capabilities — mobile-only scroll-jack ----------
-   Scoped to (max-width:639px) AND html.has-cap-jack (added by main.js only
-   after it has moved #capGallery into the wrapper below). Tablet/desktop
-   (>=640px) never get this class or markup, so the grid above is completely
-   unaffected there. No drag handles, buttons or arrows exist — the section
-   pins on scroll and steps through services one at a time via wheel/touch
-   scroll intent only, sliding right-to-left going forward and reversing
-   left-to-right going back. */
-@media (max-width:639px){
-  /* .capabilities inherits vertical padding from --section-pad (~72px top
-     and bottom on mobile — see the shared rule at the top of this file).
-     That's correct in normal (non-jacked) flow, same as every other
-     section. But once JS has pinned the gallery (buildDom() in main.js now
-     moves .capabilities__intro into the stage alongside it — see
-     .cap-scroller__stage below), that padding no longer borders any real
-     in-flow content: it just sits before/after the sticky stage as dead
-     scroll distance the user has to cross before the stage can even
-     engage, and again after it releases. Zero it in both directions here
-     (mobile + has-cap-jack only) so the section's own height collapses to
-     exactly the stage's — sticky engages the instant the section reaches
-     the viewport top, with the heading and first card already on screen,
-     and releases straight into .work's own top padding, same as every
-     other section transition on the site. */
-  html.has-cap-jack .capabilities{ padding-top:0; padding-bottom:0; }
-  html.has-cap-jack .cap-scroller{
-    position:relative;
-    /* Height is set inline by main.js (sizeScroller()) to the stage's own
-       *measured* content height (heading + one card) plus a small fixed
-       runway — never to 100dvh and never to a function of tile count. A
-       fixed 100dvh here was the actual bug: it forced .cap-scroller__stage
-       to centre ~550-650px of real content inside a fake full-screen box,
-       which is exactly what produced the large empty gap above the first
-       card and below the last one. Sizing this to the real content instead
-       means the pin starts flush with the first card and ends flush right
-       after the last one, with no dead scroll distance on either side. */
-  }
-  html.has-cap-jack .cap-scroller__stage{
-    position:sticky;
-    top:0;
-    /* No fixed height and no vertical centering: the stage's height is
-       simply its own content (heading + sliding gallery row, in the same
-       visual order/spacing as the unjacked layout — no design change, just
-       relocated), so there's nothing left over to distribute above or
-       below it. That's what removes the dead space at both ends of the pin
-       — see the comment on .cap-scroller above for why a fixed height was
-       the root cause. overflow:hidden still clips the off-stage tiles
-       during the horizontal slide, same as before. */
-    overflow:hidden;
-    display:flex;
-    flex-direction:column;
-  }
-  html.has-cap-jack .cap-scroller__stage .cap-gallery{
-    display:flex;
-    flex-wrap:nowrap;
-    direction:ltr; /* keep the slide math predictable regardless of the page's RTL base direction */
-    width:100%;
-    transition:transform 620ms cubic-bezier(.65,0,.35,1);
-    will-change:transform;
-  }
-  html.has-cap-jack .cap-scroller__stage .cap-tile{
-    flex:0 0 100%;
-    max-width:100%;
-    padding-inline:clamp(18px,5vw,28px);
-  }
-}
-@media (max-width:639px) and (prefers-reduced-motion: reduce){
-  html.has-cap-jack .cap-scroller__stage .cap-gallery{ transition:none; }
+@media (prefers-reduced-motion: reduce){
+  .cap-lightbox__track{ transition:none; }
 }
 
 /* ---------- Selected Work ---------- */
@@ -562,12 +523,30 @@ body{
 .recognition__intro{ max-width:var(--container); margin:0 auto clamp(40px,7vw,72px); }
 .recognition__intro h2{ font-size:clamp(2rem,4.2vw,3rem); }
 .recognition__list{ max-width:var(--container); margin:0 auto; border-top:1px solid var(--line); }
-.recognition__list li{
+.recognition__list > li{
   display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:.4rem 1rem;
   padding:1.5rem 0; border-bottom:1px solid var(--line);
   font-family:var(--font-display); font-weight:600; font-size:clamp(1.05rem,2vw,1.4rem);
 }
 .rec-tag{ font-family:var(--font-body); font-weight:400; font-size:.85rem; color:var(--muted); }
+
+li.recognition__group{ display:block; padding:1.5rem 0; border-bottom:1px solid var(--line); }
+.recognition__group-title{
+  display:flex; justify-content:space-between; align-items:baseline;
+  font-family:var(--font-display); font-weight:600; font-size:clamp(1.05rem,2vw,1.4rem);
+}
+.recognition__sublist{
+  margin-top:1rem; padding-inline-start:1.6rem; display:flex; flex-direction:column; gap:.65rem;
+  border-inline-start:1px solid var(--line);
+}
+.recognition__sublist li{
+  font-family:var(--font-body); font-weight:500; font-size:.95rem; color:var(--muted);
+  position:relative; padding-inline-start:1.1rem;
+}
+.recognition__sublist li::before{
+  content:""; position:absolute; inset-inline-start:0; top:.55em;
+  width:5px; height:5px; border-radius:50%; background:var(--gold);
+}
 
 /* ---------- Press / X Recognition ---------- */
 .press{ padding:var(--section-pad) var(--gutter); background:var(--paper); }
@@ -626,13 +605,9 @@ body{
   background:var(--ink); border-color:var(--ink); color:var(--paper); transform:translateY(-50%) scale(1.06);
 }
 
-/* ---- Cards (unchanged visual language, just more compact) ---- */
+/* ---- Cards — no outer frame/box; the tweet sits directly on the page ---- */
 .press-card{
-  background:var(--white); border:1px solid var(--line); border-radius:14px;
-  padding:1.15rem; transition:border-color var(--dur-s), box-shadow var(--dur-s), transform var(--dur-s);
-}
-.press-card:hover{
-  border-color:var(--gold); box-shadow:0 24px 48px -32px rgba(23,19,15,.28); transform:translateY(-4px);
+  background:transparent; border:0; border-radius:0; padding:0;
 }
 .press-card__skeleton{ display:flex; gap:.9rem; align-items:flex-start; margin-bottom:.9rem; }
 .press-card__avatar{
@@ -649,17 +624,23 @@ body{
   border-top:1px dashed var(--line); padding-top:.9rem;
 }
 
-/* Live X (Twitter) embed — loaded lazily via JS; skeleton shows until it
+/* Live X (Twitter) embed — loaded eagerly via JS; skeleton shows until it
    resolves, real embed replaces it, fallback shows only if it fails.
    `zoom` (supported in Safari, Chrome, Edge) shrinks the embed's own type
    and chrome by ~13% and reflows its box accordingly, so the card gets
    both a smaller font and a shorter height — a real iframe's internal
-   styles can't be reached with plain CSS since it's cross-origin. */
-.press-card__embed{ min-height:150px; }
-.press-card__embed iframe{ max-width:100%; zoom:.87; }
+   styles can't be reached with plain CSS since it's cross-origin.
+   A fixed height + overflow:hidden keeps every tweet the same visual
+   height regardless of how much text/media the original tweet has. */
+.press-card__embed{ height:360px; overflow:hidden; }
+.press-card__embed iframe{ max-width:100%; width:100%; height:100% !important; zoom:.87; }
 .press-card__fallback{
   display:none; flex-direction:column; align-items:center; justify-content:center;
-  gap:.7rem; min-height:150px; text-align:center;
+  gap:.7rem; height:360px; text-align:center;
+}
+@media (max-width:700px){
+  .press-card__embed{ height:320px; }
+  .press-card__fallback{ height:320px; }
 }
 .press-card__fallback svg{ width:26px; height:26px; fill:var(--ink); opacity:.8; }
 .press-card__fallback span{ font-size:.78rem; color:var(--muted); }
@@ -703,8 +684,17 @@ body{
 .contact__details dd{ font-size:1.05rem; }
 .contact__details a{ border-bottom:1px solid var(--gold); transition:opacity var(--dur-s); }
 .contact__details a:hover{ opacity:.7; }
-.social-row--contact{ gap:1.8rem; }
-.social-row--contact a{ font-weight:500; }
+.social-row--contact{ gap:1rem; }
+.social-row--contact a{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:42px; height:42px; border-radius:50%;
+  border:1px solid var(--line); color:var(--ink);
+  transition:color var(--dur-s) var(--ease), background var(--dur-s) var(--ease), border-color var(--dur-s) var(--ease);
+}
+.social-row--contact a svg{ width:18px; height:18px; }
+.social-row--contact a:hover, .social-row--contact a:focus-visible{
+  color:var(--paper); background:var(--ink); border-color:var(--ink);
+}
 @media (min-width:860px){ .contact__grid{ grid-template-columns:1.15fr .85fr; } }
 
 /* ---------- Footer ---------- */

@@ -393,232 +393,294 @@
       .catch(() => showFallback(container));
   };
 
-  if ('IntersectionObserver' in window) {
-    const embedIO = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            mountTweet(entry.target);
-            embedIO.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.1, rootMargin: '200px 0px' }
-    );
-    embeds.forEach((el) => embedIO.observe(el));
+  // Kick the widgets.js fetch off immediately on page load rather than
+  // waiting for the press section to scroll into view — by the time the
+  // visitor reaches it (several sections down), the script is already
+  // warm and each createTweet() call resolves with no visible delay.
+  loadTwitterScript().catch(() => {});
+
+  // Mount every embed right away too (not gated behind IntersectionObserver)
+  // so all the tweet fetches start in parallel as soon as the page is
+  // idle, instead of serially as each card scrolls into view.
+  const mountAll = () => embeds.forEach(mountTweet);
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(mountAll, { timeout: 1500 });
   } else {
-    // No IO support: load embeds directly (still async/non-blocking).
-    embeds.forEach(mountTweet);
+    setTimeout(mountAll, 150);
   }
 })();
 
 /**
- * ---------- Capabilities (Services) section: mobile-only scroll-jack ----------
- * Below 640px ONLY. On desktop/tablet this script does nothing — the
- * `.cap-gallery` grid is never touched, no wrapper elements are ever
- * created, and nothing is added to the DOM.
- *
- * On mobile, buildDom() moves both `.capabilities__intro` (the heading)
- * and `#capGallery` into a `.cap-scroller > .cap-scroller__stage` wrapper.
- * The instant that wrapper reaches the top of the viewport it pins (CSS
- * `position:sticky`), with the heading and first card already on screen
- * together — no separate scroll runway through the heading beforehand.
- * Scroll input (wheel notch or one finger swipe) is then intercepted to
- * step exactly one service at a time — never more than one per scroll —
- * sliding right-to-left going forward and left-to-right in reverse. There
- * is no drag-to-scrub, no buttons, no arrows: scroll is the only control
- * surface. Once the last service is reached, the section unpins and the
- * page continues scrolling normally straight into the next section;
- * scrolling back up re-pins and reverses the sequence symmetrically.
+ * ---------- Capabilities section: single-image swipe carousel + lightbox ----------
+ * Same behaviour on every breakpoint (no separate mobile/desktop code
+ * paths) and on touch or mouse (Pointer Events unify both): one photo on
+ * screen at a time, a real-time 1:1 drag that follows the pointer, an
+ * elastic snap-back on a short drag, a smooth advance to the next/prev
+ * photo once the drag passes a distance threshold, GPU-accelerated
+ * transform:translate3d(), a peek of both neighbours (see --cap-peek in
+ * css/style.css), and a full-screen lightbox with identical drag
+ * behaviour that hands the visitor back to the same photo in the gallery
+ * on close. Section colours/type are untouched — only the browsing
+ * mechanics are new. No third-party carousel library is used.
  */
 (() => {
   'use strict';
 
-  const section = document.getElementById('capabilities');
-  const gallery = document.getElementById('capGallery');
-  const intro = section ? section.querySelector('.capabilities__intro') : null;
-  if (!section || !gallery) return;
+  const carousel = document.getElementById('capCarousel');
+  const viewport = document.getElementById('capViewport');
+  const track = document.getElementById('capTrack');
+  const prevBtn = document.getElementById('capPrev');
+  const nextBtn = document.getElementById('capNext');
+  const lightbox = document.getElementById('capLightbox');
+  const lightboxViewport = document.getElementById('capLightboxViewport');
+  const lightboxTrack = document.getElementById('capLightboxTrack');
+  const lightboxClose = document.getElementById('capLightboxClose');
+  if (!carousel || !viewport || !track || !lightbox || !lightboxTrack) return;
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const mq = window.matchMedia('(max-width: 639px)');
 
-  const tiles = Array.from(gallery.children);
-  const total = tiles.length;
-  if (total < 2 || reduceMotion) return;
+  const slides = Array.from(track.children);
+  const lightboxSlides = Array.from(lightboxTrack.children);
+  const total = slides.length;
+  if (!total) return;
 
-  const TRANSITION_MS = 620;
-  const STEP_THRESHOLD_PX = 12;
-
-  let scroller = null;
-  let stage = null;
-  let active = false; // true once #capGallery has been moved into the pin wrapper
-  let index = 0;
-  let animating = false;
-  let wheelLocked = false;
-  let touchActive = false;
-  let touchLocked = false;
-  let touchStartY = 0;
-
-  const place = (animate) => {
-    if (!animate) gallery.style.transition = 'none';
-    gallery.style.transform = `translateX(${-index * 100}%)`;
-    if (!animate) {
-      void gallery.offsetHeight; // reflow, so the transition re-enables cleanly on the next step
-      gallery.style.transition = '';
-    }
-  };
-
-  const isStuck = () => !!stage && Math.abs(stage.getBoundingClientRect().top) < 1.5;
-
-  const goNext = () => {
-    if (animating || index >= total - 1) return;
-    animating = true;
-    index += 1;
-    place(true);
-  };
-
-  const goPrev = () => {
-    if (animating || index <= 0) return;
-    animating = true;
-    index -= 1;
-    place(true);
-  };
-
-  gallery.addEventListener('transitionend', (e) => {
-    if (e.target === gallery && e.propertyName === 'transform') animating = false;
+  // Pull the real image URLs straight from the main carousel — the
+  // lightbox never keeps its own separate, hardcoded copy of the list.
+  const sources = slides.map((slide) => {
+    const img = slide.querySelector('img');
+    return img ? img.getAttribute('src') : '';
   });
 
-  const onWheel = (e) => {
-    if (!active || !isStuck()) return;
-    const goingDown = e.deltaY > 0;
-    if (goingDown && index >= total - 1) return; // last service reached — release, let the page scroll on
-    if (!goingDown && index <= 0) return; // first service — release, let the page scroll up
-    e.preventDefault();
-    if (wheelLocked || animating) return;
-    wheelLocked = true;
-    if (goingDown) goNext();
-    else goPrev();
-    setTimeout(() => { wheelLocked = false; }, TRANSITION_MS + 80);
+  let index = 0;
+  let slideStep = 0;    // one slide's full width, including the gap
+  let centerOffset = 0; // px kept clear on each side so both neighbours peek through
+
+  /* ---------- Small helper shared by the gallery drag and the lightbox drag ---------- */
+  const attachDrag = (trackEl, opts) => {
+    let dragging = false;
+    let dragMoved = false;
+    let startX = 0;
+    let baseX = 0;
+
+    trackEl.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      dragging = true;
+      dragMoved = false;
+      startX = e.clientX;
+      baseX = opts.getX();
+      trackEl.style.transition = 'none';
+      trackEl.classList.add('is-dragging');
+      try { trackEl.setPointerCapture(e.pointerId); } catch (err) { /* noop — progressive enhancement */ }
+    });
+
+    trackEl.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const delta = e.clientX - startX;
+      if (Math.abs(delta) > 4) dragMoved = true;
+      // Real-time: the photo tracks the pointer directly, no easing while dragging.
+      trackEl.style.transform = `translate3d(${baseX + delta}px,0,0)`;
+    });
+
+    const endDrag = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      trackEl.classList.remove('is-dragging');
+      trackEl.style.transition = '';
+      const endX = typeof e.clientX === 'number' ? e.clientX : startX;
+      const delta = endX - startX;
+      const threshold = Math.max(48, opts.getStep() * 0.18);
+      if (Math.abs(delta) > threshold) {
+        if (delta < 0) opts.next();
+        else opts.prev();
+      } else {
+        opts.settle(); // short drag — elastic snap back to the current photo
+      }
+      // Keep dragMoved true through the synthetic click the browser fires
+      // right after this pointerup (that's what the capture-phase listener
+      // below needs to swallow), then release it so it can't linger and
+      // block an unrelated later click (e.g. a keyboard-activated one).
+      setTimeout(() => { dragMoved = false; }, 0);
+    };
+    trackEl.addEventListener('pointerup', endDrag);
+    trackEl.addEventListener('pointercancel', endDrag);
+
+    // Swallow the click a real drag would otherwise fire on the frame
+    // button underneath it, so swiping never accidentally opens the
+    // lightbox — same technique the press carousel uses above.
+    trackEl.addEventListener(
+      'click',
+      (e) => {
+        if (dragMoved) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      },
+      true
+    );
   };
 
-  const onTouchStart = (e) => {
-    touchStartY = e.touches[0].clientY;
-    touchActive = true;
-    touchLocked = false;
+  /* ================= Main carousel ================= */
+  const measure = () => {
+    const rect = slides[0].getBoundingClientRect();
+    const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+    slideStep = rect.width + gap;
+    centerOffset = Math.max(0, (viewport.clientWidth - rect.width) / 2);
   };
 
-  const onTouchMove = (e) => {
-    if (!active || !touchActive || !isStuck()) return;
-    const dy = touchStartY - e.touches[0].clientY; // >0: finger moved up = scroll-down intent
-    if (Math.abs(dy) < STEP_THRESHOLD_PX) return;
-    const goingDown = dy > 0;
-    if (goingDown && index >= total - 1) return;
-    if (!goingDown && index <= 0) return;
-    e.preventDefault();
-    if (touchLocked || animating) return;
-    touchLocked = true;
-    if (goingDown) goNext();
-    else goPrev();
+  const currentX = () => centerOffset - index * slideStep;
+
+  const updateArrows = () => {
+    if (prevBtn) prevBtn.disabled = index <= 0;
+    if (nextBtn) nextBtn.disabled = index >= total - 1;
   };
 
-  const onTouchEnd = () => {
-    touchActive = false;
-    touchLocked = false;
+  const preloadAround = (i) => {
+    [i - 1, i, i + 1].forEach((n) => {
+      if (n < 0 || n >= total) return;
+      const img = slides[n].querySelector('img');
+      if (img) img.loading = 'eager'; // upgrade the neighbours so the next/prev slide is already decoded
+    });
   };
 
-  // .cap-scroller (the sticky spacer) has no height in CSS on purpose — it's
-  // sized here, live, to the stage's *actual rendered content height*
-  // (heading + one card) plus PIN_RUNWAY_PX, instead of a fixed 100dvh.
-  // Sizing the spacer to a viewport-based fixed value was the real bug
-  // behind the large gap before the first card and after the last one:
-  // .cap-scroller__stage would then have ~100dvh to fill but only
-  // ~550-650px of real content, so it centred that content and left the
-  // rest as dead space. Measuring the real height means the pin starts
-  // flush with the first card and ends flush after the last one, with the
-  // next section following on immediately — no dead scroll distance either
-  // side. Must run AFTER 'has-cap-jack' is on <html>, since that's what
-  // switches .cap-gallery/.cap-tile into their sliding single-column
-  // layout in CSS — measuring before that would capture the wrong (grid)
-  // height.
-  const PIN_RUNWAY_PX = 24; // just enough non-zero range for position:sticky to engage/release in — not tied to viewport or tile count.
-  const sizeScroller = () => {
-    if (!scroller || !stage) return;
-    scroller.style.height = Math.ceil(stage.getBoundingClientRect().height) + PIN_RUNWAY_PX + 'px';
+  const place = (animate) => {
+    const x = currentX();
+    if (!animate) track.style.transition = 'none';
+    track.style.transform = `translate3d(${x}px,0,0)`;
+    if (!animate) {
+      void track.offsetHeight; // reflow so the transition re-enables cleanly next time
+      track.style.transition = '';
+    }
+    updateArrows();
   };
 
-  const buildDom = () => {
-    if (active) return;
-    scroller = document.createElement('div');
-    scroller.className = 'cap-scroller';
-    stage = document.createElement('div');
-    stage.className = 'cap-scroller__stage';
-    // Pull .capabilities__intro into the pinned stage too, ahead of the
-    // gallery, so the sticky pin engages with the heading and first card
-    // already on screen together — no normal-scroll runway through the
-    // heading before pinning starts. Falls back to anchoring on the
-    // gallery alone if the intro markup isn't found for any reason.
-    const anchor = intro || gallery;
-    anchor.parentNode.insertBefore(scroller, anchor);
-    if (intro) stage.appendChild(intro);
-    stage.appendChild(gallery);
-    scroller.appendChild(stage);
-    // The horizontal slide is the reveal now — settle the fade-up state so
-    // it doesn't fight the transform on tiles that haven't fully intersected.
-    tiles.forEach((t) => t.classList.add('in-view'));
-    index = 0;
-    place(false);
-    document.documentElement.classList.add('has-cap-jack');
-    sizeScroller();
-    window.addEventListener('wheel', onWheel, { passive: false });
-    window.addEventListener('touchstart', onTouchStart, { passive: true });
-    window.addEventListener('touchmove', onTouchMove, { passive: false });
-    window.addEventListener('touchend', onTouchEnd, { passive: true });
-    active = true;
-  };
+  let animating = false;
+  track.addEventListener('transitionend', (e) => {
+    if (e.target === track && e.propertyName === 'transform') animating = false;
+  });
 
-  const teardownDom = () => {
-    if (!active) return;
-    window.removeEventListener('wheel', onWheel);
-    window.removeEventListener('touchstart', onTouchStart);
-    window.removeEventListener('touchmove', onTouchMove);
-    window.removeEventListener('touchend', onTouchEnd);
-    document.documentElement.classList.remove('has-cap-jack');
-    gallery.style.transform = '';
-    gallery.style.transition = '';
-    // Restore original order: intro, then gallery, both back in .capabilities.
-    if (intro) section.insertBefore(intro, scroller);
-    section.insertBefore(gallery, scroller);
-    scroller.remove();
-    scroller = null;
-    stage = null;
-    animating = false;
-    wheelLocked = false;
-    touchLocked = false;
-    touchActive = false;
-    active = false;
+  const goTo = (i, animate) => {
+    index = Math.max(0, Math.min(total - 1, i));
+    const willAnimate = animate !== false && !reduceMotion;
+    animating = willAnimate;
+    place(willAnimate);
+    preloadAround(index);
   };
+  const goNext = () => { if (!animating) goTo(index + 1); };
+  const goPrev = () => { if (!animating) goTo(index - 1); };
 
-  const syncMode = () => {
-    if (mq.matches) buildDom();
-    else teardownDom();
-  };
+  if (nextBtn) nextBtn.addEventListener('click', goNext);
+  if (prevBtn) prevBtn.addEventListener('click', goPrev);
 
-  syncMode();
-  if (typeof mq.addEventListener === 'function') mq.addEventListener('change', syncMode);
-  else if (typeof mq.addListener === 'function') mq.addListener(syncMode); // Safari <14 fallback
+  attachDrag(track, {
+    getX: currentX,
+    getStep: () => slideStep,
+    next: goNext,
+    prev: goPrev,
+    settle: () => place(!reduceMotion),
+  });
+
+  // Tapping (not dragging) a frame opens the lightbox at that photo.
+  slides.forEach((slide, i) => {
+    const btn = slide.querySelector('[data-cap-open]');
+    if (btn) btn.addEventListener('click', () => openLightbox(i));
+  });
+
+  measure();
+  place(false);
+  preloadAround(0);
 
   let resizeTimer;
   window.addEventListener(
     'resize',
     () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        // Re-measure too: rotating the device or resizing changes the
-        // tile's rendered height (aspect-ratio card, clamp()'d type), so
-        // the spacer has to track that or the flush-start/flush-end fix
-        // above would drift out of sync again.
-        if (active) { place(false); sizeScroller(); }
-      }, 120);
+      resizeTimer = setTimeout(() => { measure(); place(false); }, 120);
+    },
+    { passive: true }
+  );
+
+  /* ================= Lightbox (full-screen viewer, same drag model) ================= */
+  let lbIndex = 0;
+  let lbStep = 0;
+  let lbOpen = false;
+  let lastFocused = null;
+
+  const lbMeasure = () => { lbStep = lightboxViewport.clientWidth; };
+  const lbCurrentX = () => -lbIndex * lbStep;
+
+  const lbPlace = (animate) => {
+    const x = lbCurrentX();
+    if (!animate) lightboxTrack.style.transition = 'none';
+    lightboxTrack.style.transform = `translate3d(${x}px,0,0)`;
+    if (!animate) {
+      void lightboxTrack.offsetHeight;
+      lightboxTrack.style.transition = '';
+    }
+  };
+
+  const lbPreload = (i) => {
+    [i - 1, i, i + 1].forEach((n) => {
+      if (n < 0 || n >= total) return;
+      const img = lightboxSlides[n].querySelector('img');
+      if (img && !img.src && sources[n]) img.src = sources[n];
+    });
+  };
+
+  const lbGoTo = (i, animate) => {
+    lbIndex = Math.max(0, Math.min(total - 1, i));
+    lbPlace(animate !== false && !reduceMotion);
+    lbPreload(lbIndex);
+  };
+
+  attachDrag(lightboxTrack, {
+    getX: lbCurrentX,
+    getStep: () => lbStep,
+    next: () => lbGoTo(lbIndex + 1),
+    prev: () => lbGoTo(lbIndex - 1),
+    settle: () => lbPlace(!reduceMotion),
+  });
+
+  function openLightbox(i) {
+    lbIndex = i;
+    lastFocused = document.activeElement;
+    lightbox.hidden = false;
+    document.body.style.overflow = 'hidden';
+    lbMeasure();
+    lbPlace(false);
+    lbPreload(lbIndex);
+    lbOpen = true;
+    if (lightboxClose) lightboxClose.focus();
+  }
+
+  function closeLightbox() {
+    if (!lbOpen) return;
+    lbOpen = false;
+    lightbox.hidden = true;
+    document.body.style.overflow = '';
+    // Closing hands the visitor back to the same photo in the gallery,
+    // even if they swiped further while the lightbox was open.
+    goTo(lbIndex, false);
+    if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+  }
+
+  if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', (e) => {
+    if (e.target === lightbox) closeLightbox();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (!lbOpen) return;
+    if (e.key === 'Escape') closeLightbox();
+    else if (e.key === 'ArrowRight') lbGoTo(lbIndex - 1); // reading order is RTL: visual right = previous
+    else if (e.key === 'ArrowLeft') lbGoTo(lbIndex + 1);
+  });
+
+  let lbResizeTimer;
+  window.addEventListener(
+    'resize',
+    () => {
+      if (!lbOpen) return;
+      clearTimeout(lbResizeTimer);
+      lbResizeTimer = setTimeout(() => { lbMeasure(); lbPlace(false); }, 120);
     },
     { passive: true }
   );

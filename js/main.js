@@ -583,7 +583,25 @@
       // visible slot count — not itemCount - 1 — is what stops the
       // track flush with its real content instead of overshooting
       // into empty space.
-      maxIndex = Math.max(0, Math.floor(itemCount - visibleSlots + 1e-6));
+      const raw = itemCount - visibleSlots;
+      let mi = Math.max(0, Math.floor(raw + 1e-6));
+      // The stop at `mi` is normally the flush (end-anchored) stop, one
+      // step-jump past the last uniform stop at `mi - 1`. That jump is
+      // only guaranteed to fully reveal every photo along the way when
+      // the viewport shows at least ~2 slots at once — with fewer (the
+      // narrower mobile "1 full + a peek" layout), the photo that falls
+      // right on the seam between those two stops ends up only ever
+      // half-visible in both, then the carousel jumps straight past it to
+      // the final photo. When that's the case, insert one more regular
+      // stop first so that seam photo gets its own fully-visible resting
+      // position before the final flush snap. On wider viewports (desktop)
+      // this check is false and `mi` is untouched.
+      if (mi > 0) {
+        const lastUniformEnd = (mi - 1) + visibleSlots;
+        const seamPhotoEnd = mi + 1;
+        if (seamPhotoEnd > lastUniformEnd + 1e-6) mi += 1;
+      }
+      maxIndex = mi;
       index = clampIndex(index);
     }
 

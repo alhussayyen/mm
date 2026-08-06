@@ -382,6 +382,7 @@ body{
    (≥860px, the breakpoint above) is unaffected. */
 @media (max-width:859px){
   .who .portrait-frame{ max-width:80%; margin-inline:auto; }
+  .who__copy h2{ margin-top:28px; }
 }
 
 /* ---------- Iconic (Bono) ---------- */
@@ -416,11 +417,14 @@ body{
 @media (max-width:899px){
   .iconic .ph--cinema{ aspect-ratio:4/5; }
   .iconic__caption{ max-width:none; padding:20px var(--gutter) 40px; }
-  .iconic__caption h3{ font-size:clamp(1.5rem,6vw,2rem); margin:0; }
+  .iconic__caption h3{ font-size:clamp(1.5rem,6vw,2rem); margin:0; color:#FFFFFF; }
   .iconic__desc--overlay{ display:none; }
+  /* Mobile only, per request: whole section on black with white text —
+     size/margins/padding below are unchanged, only colors. */
+  .iconic{ background:#000000; }
   .iconic__desc--below{
     display:block; grid-column:1; grid-row:2; /* .iconic is display:grid with an implicit single cell (see .ph/.iconic__caption grid-area:1/1 above) — place this explicitly in a new row below the image instead of falling back into that same overlapping cell */
-    color:var(--muted); max-width:none;
+    color:#FFFFFF; max-width:none;
     padding:16px var(--gutter) 0;
   }
 }
@@ -714,6 +718,18 @@ li.recognition__group{ display:block; padding:1.5rem 0; border-bottom:1px solid 
 .press-carousel__track.is-dragging{ transition:none; cursor:grabbing; }
 .press-carousel.is-dragging .press-card__embed{ pointer-events:none; }
 .press-carousel__track:active{ cursor:grabbing; }
+
+/* Mobile (iPhone-style two-up) only: the track's default align-items:stretch
+   forces every card in the row — including the two currently in view — up
+   to the height of the single tallest tweet anywhere in the whole track
+   (text-only tweets included alongside ones with photos), which is what
+   made cards look far taller than their own content and crowd/overlap the
+   next row when swiping. Letting each card size to its own content keeps
+   every pair compact and consistent, and fits more tweets on screen.
+   Desktop (≥700px) keeps the original stretch behaviour, untouched. */
+@media (max-width:699px){
+  .press-carousel__track{ align-items:flex-start; }
+}
 
 .press-carousel__slide{
   flex:0 0 auto;

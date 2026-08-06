@@ -393,6 +393,54 @@
     if (fallback) fallback.style.display = 'flex';
   };
 
+  // X's widget only accepts a width between these two values (below TW_MIN
+  // it won't render at all / falls back to its own default).
+  const TW_MIN = 220;
+  const TW_MAX = 550;
+
+  // On the mobile two-up layout each card is narrower than TW_MIN, so X
+  // can't render the tweet at the card's real size. Instead of letting it
+  // overflow the card (clipped by the carousel viewport's overflow:hidden)
+  // or leave blank space (rendered wider than the card), mount it at X's
+  // own floor width and scale the whole embed down uniformly with
+  // `transform: scale()` — proportions stay intact, nothing is cropped,
+  // and there's no left-over gap because the scale factor is exactly
+  // card-width / rendered-width. `top left` keeps the scale anchored at
+  // the card's own edge (the track runs direction:ltr) instead of the
+  // element's center, so the visible result lines up flush with the card
+  // instead of spilling out one side and getting clipped on the other.
+  const fitEmbedToCard = (container, iframe, renderedWidth) => {
+    iframe.style.width = renderedWidth + 'px';
+    iframe.style.maxWidth = 'none';
+    iframe.style.transformOrigin = 'top left';
+    container.style.overflow = 'hidden';
+
+    let raf = null;
+    const sync = () => {
+      const cardWidth = container.clientWidth;
+      if (!cardWidth) return;
+      const scale = Math.min(1, cardWidth / renderedWidth);
+      iframe.style.transform = `scale(${scale})`;
+      const rect = iframe.getBoundingClientRect();
+      if (rect.height) container.style.height = Math.ceil(rect.height) + 'px';
+    };
+    const scheduleSync = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(sync);
+    };
+
+    scheduleSync();
+    if ('ResizeObserver' in window) {
+      // X sets the iframe's real height asynchronously once the tweet's
+      // content is known, and the card's own width can change (rotation,
+      // window resize) — both need a re-sync.
+      new ResizeObserver(scheduleSync).observe(iframe);
+      new ResizeObserver(scheduleSync).observe(container);
+    } else {
+      window.addEventListener('resize', scheduleSync);
+    }
+  };
+
   const mountTweet = (container) => {
     const id = container.dataset.tweetId;
     if (!id) return;
@@ -402,11 +450,16 @@
     // carousel viewport's overflow:hidden, and on any card wider than the
     // tweet's actual content it leaves blank iframe background on one side
     // — both of which are exactly what was reported. Pinning `width` to the
-    // card's real measured width (clamped to X's supported 220–550px range)
-    // makes the embed always render at the card's own size, so `align:
-    // 'center'` above has no left-over space left to center within.
+    // card's real measured width makes the embed always render at the
+    // card's own size, so `align: 'center'` above has no left-over space
+    // left to center within. Cards narrower than X's own floor (the mobile
+    // two-up layout) request the floor width instead and get scaled down
+    // to fit — see fitEmbedToCard.
     const measuredWidth = container.clientWidth || container.getBoundingClientRect().width;
-    const width = measuredWidth ? Math.max(220, Math.min(550, Math.round(measuredWidth))) : undefined;
+    const needsScale = measuredWidth > 0 && measuredWidth < TW_MIN;
+    const requestWidth = measuredWidth
+      ? Math.max(TW_MIN, Math.min(TW_MAX, Math.round(measuredWidth)))
+      : undefined;
     withTimeout(loadTwitterScript(), 9000)
       .then((twttr) =>
         withTimeout(
@@ -415,7 +468,7 @@
             dnt: true,
             conversation: 'none',
             align: 'center',
-            ...(width ? { width } : {}),
+            ...(requestWidth ? { width: requestWidth } : {}),
           }),
           9000
         )
@@ -424,6 +477,7 @@
         const skeleton = container.querySelector('.press-card__skeleton');
         if (el) {
           if (skeleton) skeleton.remove();
+          if (needsScale && requestWidth) fitEmbedToCard(container, el, requestWidth);
         } else {
           showFallback(container);
         }

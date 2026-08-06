@@ -599,38 +599,11 @@ body{
 }
 .work__feature figcaption span{ font-size:.78rem; letter-spacing:.08em; color:var(--gold-light); }
 .work__feature figcaption h3{ font-size:clamp(1.5rem,3vw,2.2rem); }
-.work__split{ max-width:var(--container); margin:0 auto; display:grid; gap:clamp(20px,3vw,32px); }
+.work__split{ max-width:var(--container); margin:0 auto; display:grid; gap:clamp(20px,3vw,32px); grid-template-columns:1fr 1fr; }
 .work__split .ph{ position:relative; }
 .work__split figcaption{ position:absolute; inset:auto auto 20px 20px; color:var(--paper); }
 .work__split figcaption span{ font-size:.75rem; color:var(--gold-light); }
 .work__split figcaption h3{ font-size:1.3rem; margin-top:.3rem; }
-@media (min-width:760px){ .work__split{ grid-template-columns:1fr 1fr; } }
-
-/* Work gallery — image sizing, prepared ahead of real photography.
-   Card shape/aspect-ratio (ph--full, ph--tall), count, captions and spacing
-   are untouched. Once a real <img> replaces the .ph__texture placeholder
-   (per README), it will sit centered inside the card with equal padding on
-   every side instead of touching the edges — mobile and desktop each get
-   their own width/height/max-width/max-height, set independently via media
-   queries (no shared value scaled up/down). Adjust the numbers below once
-   real assets are in if the visual balance needs a nudge. */
-.work .ph--photo{ display:flex; align-items:center; justify-content:center; }
-.work .ph--photo img{
-  position:static;
-  object-fit:contain;
-  width:88%;
-  height:88%;
-  max-width:560px;
-  max-height:420px;
-}
-@media (min-width:760px){
-  .work .ph--photo img{
-    width:64%;
-    height:64%;
-    max-width:480px;
-    max-height:360px;
-  }
-}
 
 /* ---------- Clients ---------- */
 .clients{ padding:var(--section-pad) var(--gutter); background:var(--black); color:var(--paper); text-align:center; }
@@ -744,11 +717,15 @@ li.recognition__group{ display:block; padding:1.5rem 0; border-bottom:1px solid 
 
 .press-carousel__slide{
   flex:0 0 auto;
-  width:100%;
+  width:calc((100% - var(--pc-gap)) / 2);
   user-select:none; -webkit-user-select:none;
 }
-@media (min-width:700px){ .press-carousel__slide{ width:calc((100% - var(--pc-gap)) / 2); } }
-@media (min-width:1024px){ .press-carousel__slide{ width:calc((100% - 3 * var(--pc-gap)) / 4); } }
+/* 4-up only kicks in once each card is comfortably above X's 220px embed
+   floor (see press-card__embed iframe below) — at 1024px the 4-column math
+   drops to ~184px per card, forcing the embed wider than its own column and
+   clipping it against the carousel viewport's overflow:hidden. 1280px keeps
+   every card at 239px or more. */
+@media (min-width:1280px){ .press-carousel__slide{ width:calc((100% - 3 * var(--pc-gap)) / 4); } }
 
 /* ---- Arrows — outside the cards, in the reserved side padding ---- */
 .press-carousel__arrow{
@@ -788,19 +765,24 @@ li.recognition__group{ display:block; padding:1.5rem 0; border-bottom:1px solid 
 
 /* Live X (Twitter) embed — loaded eagerly via JS; skeleton shows until it
    resolves, real embed replaces it, fallback shows only if it fails.
-   `zoom` (supported in Safari, Chrome, Edge) shrinks the embed's own type
-   and chrome by ~13% and reflows its box accordingly — a real iframe's
-   internal styles can't be reached with plain CSS since it's cross-origin.
-   Height is intentionally auto, not fixed: X's own script sets the
-   iframe's real height once the tweet's actual content (text, media,
-   buttons) is known, and the card must grow to fit that exactly — a
-   fixed height + overflow:hidden would crop whatever doesn't fit, which
-   is exactly what this avoids. The flex track's default align-items:
-   stretch (see .press-carousel__track above) still keeps every card in
-   a row lined up to the same height, it just derives that height from
-   the tallest real tweet instead of an arbitrary pixel value. */
+   The JS mounts each tweet at the card's own measured width so the iframe
+   never has to be forced into a smaller box than X actually rendered it at
+   (that mismatch is what used to leave a blank strip on one side and clip
+   frames on some cards). Height is intentionally auto, not fixed: X's own
+   script sets the iframe's real height once the tweet's actual content
+   (text, media, buttons) is known, and the card must grow to fit that
+   exactly — a fixed height + overflow:hidden would crop whatever doesn't
+   fit, which is exactly what this avoids. The flex track's default
+   align-items: stretch (see .press-carousel__track above) still keeps
+   every card in a row lined up to the same height, it just derives that
+   height from the tallest real tweet instead of an arbitrary pixel value.
+   On the mobile two-up layout, where a card is narrower than X's own
+   220px embed floor, the JS instead renders the tweet at that floor width
+   and scales it down uniformly with `transform: scale()` (see main.js
+   fitEmbedToCard) — that keeps proportions intact instead of forcing X to
+   clip or letterbox it. */
 .press-card__embed{ overflow:visible; }
-.press-card__embed iframe{ max-width:100%; width:100%; display:block; zoom:.87; }
+.press-card__embed iframe{ max-width:100%; width:100%; display:block; }
 .press-card__fallback{
   display:none; flex-direction:column; align-items:center; justify-content:center;
   gap:.7rem; height:360px; text-align:center;
